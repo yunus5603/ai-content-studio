@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { IconActivity, IconCard, IconGrid, IconLogout, IconMail, IconShield, IconSparkles, IconUsers } from "@/components/icons";
+import { IconActivity, IconCard, IconGrid, IconLogout, IconMail, IconShield, IconSparkles, IconUsers, IconWand } from "@/components/icons";
 import { Logo } from "@/components/logo";
 import { useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -13,6 +13,7 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 
 const nav = [
   { href: "/studio", label: "Create", icon: IconSparkles },
+  { href: "/studio/copilot", label: "Copilot", icon: IconWand },
   { href: "/studio/gallery", label: "Gallery", icon: IconGrid },
   { href: "/studio/jobs", label: "Jobs", icon: IconActivity },
   { href: "/studio/team", label: "Team", icon: IconUsers },
