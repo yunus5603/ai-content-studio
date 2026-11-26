@@ -49,7 +49,15 @@ class Job(IdMixin, TimestampMixin, Base):
     prompt: Mapped[str | None] = mapped_column(Text)
     # Validated params with defaults filled in, exactly as sent to the provider.
     params: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    # [{"asset_id": "...", "role": "image" | "mask" | "first_frame" | "last_frame"}]
+    # Set when the job was started from a storyboard (keyframe, clip or assembly).
+    # use_alter: storyboards also point at jobs, so this FK is created after both tables.
+    storyboard_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(
+            "storyboards.id", ondelete="SET NULL", use_alter=True, name="fk_jobs_storyboard_id"
+        ),
+        index=True,
+    )
+    # [{"asset_id": "...", "role": "image" | "mask" | "first_frame" | "last_frame" | "clip"}]
     inputs: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
 
     # Provider cost in USD: estimate at submit time, actual when known.

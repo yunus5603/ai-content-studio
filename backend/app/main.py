@@ -13,6 +13,7 @@ from app.api.routes import (
     me,
     prompts,
     shares,
+    storyboards,
     workspaces,
 )
 from app.core.config import get_settings
@@ -36,7 +37,18 @@ def create_app() -> FastAPI:
     async def healthz():
         return {"ok": True}
 
-    for module in (me, workspaces, assets, jobs, catalog, prompts, shares, billing, admin):
+    for module in (
+        me,
+        workspaces,
+        assets,
+        jobs,
+        catalog,
+        prompts,
+        shares,
+        billing,
+        admin,
+        storyboards,
+    ):
         app.include_router(module.router, prefix="/v1")
     if settings.storage_backend == "local":
         app.include_router(files.router)

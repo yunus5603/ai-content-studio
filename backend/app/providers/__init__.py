@@ -41,6 +41,8 @@ def get_adapter(name: str) -> Adapter:
         from app.providers.vertex_veo import run
     elif name == "debug_pixel":
         from app.providers.debug import run
+    elif name == "stitch":
+        from app.providers.stitch import run
     elif name == "debug_clip":
         from app.providers.debug import run_clip as run
     else:

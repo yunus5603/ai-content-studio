@@ -170,7 +170,9 @@ async def run_job(
     beat = asyncio.create_task(heartbeat())
     ctx: JobContext | None = None
     try:
-        spec = get_model(job.model, include_debug=settings.enable_debug_operations)
+        spec = get_model(
+            job.model, include_debug=settings.enable_debug_operations, include_internal=True
+        )
         ctx = JobContext(job, spec, sessions, storage)
         await ctx.load_inputs()
         adapter = get_adapter(spec.adapter)

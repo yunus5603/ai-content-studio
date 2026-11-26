@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 def _model_name(model_id: str) -> str:
     try:
-        return get_model(model_id, include_debug=True).name
+        return get_model(model_id, include_debug=True, include_internal=True).name
     except CatalogError:
         return model_id
 
