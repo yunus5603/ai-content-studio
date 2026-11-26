@@ -1,6 +1,7 @@
 export function usd(value: number | null | undefined): string {
   if (value == null) return "–";
-  if (value < 0.01) return `$${value.toFixed(4)}`;
+  if (value < 0) return `-${usd(-value)}`;
+  if (value !== 0 && Math.abs(value) < 0.01) return `$${value.toFixed(4)}`;
   return `$${value.toFixed(2)}`;
 }
 

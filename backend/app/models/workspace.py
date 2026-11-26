@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -20,6 +20,11 @@ class Workspace(IdMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120))
     is_personal: Mapped[bool] = mapped_column(default=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # Cached sum of credit_entries, updated in the same transaction as each entry.
+    balance_micros: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # Optional cap on spend per calendar month (UTC), set by the owner.
+    monthly_limit_micros: Mapped[int | None] = mapped_column(BigInteger)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255))
 
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
@@ -37,6 +42,8 @@ class Membership(IdMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     role: Mapped[Role] = mapped_column(role_enum)
+    # Optional cap on this member's spend per calendar month, set by admins.
+    monthly_limit_micros: Mapped[int | None] = mapped_column(BigInteger)
 
     workspace: Mapped[Workspace] = relationship(back_populates="memberships")
     user: Mapped[User] = relationship(lazy="joined")

@@ -14,8 +14,15 @@ async def ensure_personal_workspace(session: AsyncSession, user: User) -> Worksp
     )
     if existing:
         return existing
+    from app.core.config import get_settings
+    from app.services.billing import grant_signup_credit
+
     name = f"{user.display_name or user.email.split('@')[0]}'s studio"
-    return await create_workspace(session, user, name, is_personal=True)
+    ws = await create_workspace(session, user, name, is_personal=True)
+    # Only personal workspaces get the welcome credit, so creating extra team
+    # workspaces can't be used to collect more free credit.
+    await grant_signup_credit(session, ws, get_settings().signup_credit_usd)
+    return ws
 
 
 async def create_workspace(

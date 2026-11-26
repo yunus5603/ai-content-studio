@@ -14,10 +14,11 @@ The first version is built in four steps. Each lands as its own pull request.
    edit and inpainting, text to video, image to video, prompt enhancement, live
    job progress, share links.
 
-3. **Usage and billing**
+3. **Usage and billing** (done)
    Per-job metering at the provider's price plus a 10% platform fee. Free credits
-   on sign-up, then Stripe checkout for credit packs. Spending limits and an
-   admin dashboard.
+   on sign-up, then Stripe checkout for credit packs. Holds at submit and settlement
+   at finish, refunds for failures, monthly limits per workspace and per member,
+   usage reports, and a staff admin page.
 
 4. **Copilot**
    An assistant that turns a rough idea into a plan: improves the prompt, picks

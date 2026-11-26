@@ -51,6 +51,7 @@ class MemberOut(ORM):
     user: UserOut
     role: Role
     created_at: datetime
+    monthly_limit_micros: int | None = None
 
 
 class MemberUpdate(BaseModel):
@@ -126,6 +127,8 @@ class JobOut(ORM):
     outputs: list[AssetOut] = []
     estimated_price_usd: float = 0.0
     price_usd: float | None = None
+    hold_micros: int = 0
+    charged_micros: int | None = None
 
 
 class EstimateRequest(BaseModel):
@@ -178,3 +181,91 @@ class PublicShareOut(BaseModel):
 class Page[T](BaseModel):
     items: list[T]
     next_cursor: str | None = None
+
+
+class BillingSummary(BaseModel):
+    balance_usd: float
+    spent_this_month_usd: float
+    my_spent_this_month_usd: float
+    monthly_limit_usd: float | None
+    my_monthly_limit_usd: float | None
+    credit_packs_usd: list[int]
+    payments_enabled: bool
+    dev_topup_enabled: bool
+    platform_fee: float
+
+
+class CreditEntryOut(ORM):
+    id: uuid.UUID
+    kind: str
+    amount_micros: int
+    balance_after_micros: int
+    job_id: uuid.UUID | None
+    user_id: uuid.UUID | None
+    description: str | None
+    created_at: datetime
+
+
+class UsageRow(BaseModel):
+    key: str
+    label: str
+    jobs: int
+    spent_usd: float
+
+
+class UsageReport(BaseModel):
+    days: int
+    total_usd: float
+    jobs: int
+    by_day: list[UsageRow]
+    by_model: list[UsageRow]
+    by_member: list[UsageRow]
+
+
+class LimitUpdate(BaseModel):
+    monthly_limit_usd: float | None = Field(default=None, ge=0, le=1_000_000)
+
+
+class CheckoutRequest(BaseModel):
+    amount_usd: int
+
+
+class CheckoutOut(BaseModel):
+    url: str
+
+
+class TopupRequest(BaseModel):
+    amount_usd: float = Field(gt=0, le=10_000)
+
+
+class AdjustmentRequest(BaseModel):
+    amount_usd: float = Field(ge=-100_000, le=100_000)
+    reason: str = Field(min_length=3, max_length=300)
+
+
+class AdminWorkspaceRow(BaseModel):
+    id: uuid.UUID
+    name: str
+    owner_email: str
+    balance_usd: float
+    purchased_usd: float
+    spent_usd: float
+    jobs: int
+    created_at: datetime
+
+
+class AdminOverview(BaseModel):
+    days: int
+    revenue_usd: float  # Stripe purchases
+    customer_spend_usd: float  # credits consumed by jobs
+    provider_cost_usd: float
+    margin_usd: float
+    outstanding_credit_usd: float
+    free_credit_granted_usd: float
+    jobs: int
+    failed_jobs: int
+    users: int
+    new_users: int
+    workspaces: int
+    by_model: list[UsageRow]
+    by_day: list[UsageRow]

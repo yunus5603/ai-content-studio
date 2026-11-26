@@ -54,8 +54,14 @@ class Settings(BaseSettings):
     # Model used to rewrite prompts ("Enhance prompt").
     prompt_enhancer_model: str = "gemini-3.5-flash-lite"
 
-    # Free credits granted to each new personal workspace (used from step 3).
-    signup_free_credits: int = 100
+    # Billing. Free credit (USD) for each new account's personal workspace.
+    signup_credit_usd: float = 1.00
+    # Credit packs customers can buy, in USD.
+    credit_packs_usd: list[int] = [5, 10, 25, 50, 100]
+    stripe_secret_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    # Where Stripe sends people back to after checkout.
+    public_web_url: str = "http://localhost:3000"
 
     def validate_for_production(self) -> None:
         if self.env == "production":

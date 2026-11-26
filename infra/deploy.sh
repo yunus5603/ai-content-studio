@@ -73,12 +73,26 @@ if ! gcloud secrets describe studio-openai-api-key >/dev/null 2>&1; then
   printf '%s' "$OPENAI_API_KEY" | gcloud secrets create studio-openai-api-key --data-file=-
 fi
 
+echo "==> Stripe (optional; without it customers can't buy credits)"
+SECRETS="DATABASE_URL=studio-database-url:latest,OPENAI_API_KEY=studio-openai-api-key:latest"
+for pair in "STRIPE_SECRET_KEY:studio-stripe-secret-key" "STRIPE_WEBHOOK_SECRET:studio-stripe-webhook-secret"; do
+  var="${pair%%:*}"; name="${pair#*:}"
+  if [ -n "${!var:-}" ]; then
+    if gcloud secrets describe "$name" >/dev/null 2>&1; then
+      printf '%s' "${!var}" | gcloud secrets versions add "$name" --data-file=-
+    else
+      printf '%s' "${!var}" | gcloud secrets create "$name" --data-file=-
+    fi
+  fi
+  if gcloud secrets describe "$name" >/dev/null 2>&1; then SECRETS="$SECRETS,$var=$name:latest"; fi
+done
+
 echo "==> Building images ($TAG)"
 gcloud builds submit backend --tag "$IMAGE_BASE/backend:$TAG"
 
 COMMON_ENV="ENV=production,AUTH_MODE=firebase,GCP_PROJECT_ID=$PROJECT_ID,STORAGE_BACKEND=gcs,GCS_BUCKET=$BUCKET"
 COMMON_FLAGS=(--region "$REGION" --service-account "$SA" --add-cloudsql-instances "$CONN"
-  --set-secrets "DATABASE_URL=studio-database-url:latest,OPENAI_API_KEY=studio-openai-api-key:latest")
+  --set-secrets "$SECRETS")
 
 echo "==> Migrations"
 gcloud run jobs deploy studio-migrate --image "$IMAGE_BASE/backend:$TAG" "${COMMON_FLAGS[@]}" \
@@ -95,7 +109,7 @@ echo "==> API"
 WEB_URL="$(gcloud run services describe studio-web --region "$REGION" --format 'value(status.url)' 2>/dev/null || true)"
 CORS="${CORS_ORIGINS:-[\"${WEB_URL:-http://localhost:3000}\"]}"
 gcloud run deploy studio-api --image "$IMAGE_BASE/backend:$TAG" "${COMMON_FLAGS[@]}" \
-  --set-env-vars "^@^${COMMON_ENV//,/@}@CORS_ORIGINS=${CORS}" \
+  --set-env-vars "^@^${COMMON_ENV//,/@}@CORS_ORIGINS=${CORS}@PUBLIC_WEB_URL=${WEB_URL:-http://localhost:3000}" \
   --allow-unauthenticated --memory 1Gi --timeout 300
 API_URL="$(gcloud run services describe studio-api --region "$REGION" --format 'value(status.url)')"
 
@@ -117,12 +131,14 @@ gcloud run deploy studio-web --image "$IMAGE_BASE/web:$TAG" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi
 WEB_URL="$(gcloud run services describe studio-web --region "$REGION" --format 'value(status.url)')"
 
-# Point the API's CORS at the real site URL (first deploy doesn't know it yet).
+# Point the API's CORS and Stripe return URLs at the real site (first deploy doesn't know it yet).
 gcloud run services update studio-api --region "$REGION" \
-  --update-env-vars "^@^CORS_ORIGINS=[\"$WEB_URL\"]" >/dev/null
+  --update-env-vars "^@^CORS_ORIGINS=[\"$WEB_URL\"]@PUBLIC_WEB_URL=$WEB_URL" >/dev/null
 
 echo
 echo "Done."
 echo "  Web: $WEB_URL"
 echo "  API: $API_URL"
+echo "Stripe webhook endpoint: $API_URL/v1/billing/stripe/webhook"
+echo "  (events: checkout.session.completed, checkout.session.async_payment_succeeded)"
 echo "Add $(echo "$WEB_URL" | sed 's|https://||') to Identity Platform > Settings > Authorized domains."
