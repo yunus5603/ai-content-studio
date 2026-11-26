@@ -8,6 +8,7 @@ from app.api.routes import (
     assets,
     billing,
     catalog,
+    copilot,
     files,
     jobs,
     me,
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
         shares,
         billing,
         admin,
+        copilot,
         storyboards,
     ):
         app.include_router(module.router, prefix="/v1")

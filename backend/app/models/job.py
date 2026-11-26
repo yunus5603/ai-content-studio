@@ -80,3 +80,7 @@ class Job(IdMixin, TimestampMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when the job was started by a copilot plan step.
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("copilot_plans.id", ondelete="SET NULL"), index=True
+    )

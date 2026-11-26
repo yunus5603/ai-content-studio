@@ -120,6 +120,25 @@ Every workspace has a prepaid credit balance in US dollars. New users get
 (`--revoke` to undo). Staff see an **Admin** page with revenue, provider cost, margin,
 unspent customer credit, and a customer list where they can add or remove credit with a reason.
 
+## Copilot
+
+The Copilot page turns a goal ("an 8-second vertical teaser for a coffee shop") into a
+plan of generation steps: which model, which settings, the prompt for each step, and the
+price. A step can use an earlier step's output, e.g. design a key frame, then animate it.
+Nothing runs until the user approves; "Autopilot" runs plans under
+`COPILOT_AUTORUN_MAX_USD` (default $0.50) straight away.
+
+- **Planner** (`app/services/copilot/planner.py`): Gemini (`COPILOT_MODEL`) plans from the
+  model catalog when a GCP project is configured; otherwise built-in rules do it
+  (`COPILOT_PLANNER=auto|llm|rules`). Every plan is then checked against the catalog:
+  unknown models are swapped, invalid settings dropped, inputs rewired, prices computed,
+  and models downgraded to fit a budget.
+- **Runner** (`app/services/copilot/executor.py`): steps become normal jobs (same billing
+  and limits). The worker starts the next steps when a job finishes and skips dependent
+  steps when one fails. Users can edit steps, remove them, ask for changes, or stop a plan.
+- Local testing: `COPILOT_SIMULATE=true` (with `ENABLE_DEBUG_OPERATIONS=true`) runs plan
+  steps on the free debug models.
+
 ### Tests
 
 ```bash
