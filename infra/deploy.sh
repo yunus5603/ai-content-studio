@@ -8,7 +8,7 @@
 #   studio-web     Next.js site
 # plus a Cloud Run job that runs database migrations.
 #
-# Usage: PROJECT_ID=my-project REGION=us-central1 ./infra/deploy.sh
+# Usage: PROJECT_ID=my-project REGION=us-central1 OPENAI_API_KEY=sk-... FIREBASE_API_KEY=... ./infra/deploy.sh
 # Re-running is safe; existing resources are reused.
 set -euo pipefail
 
@@ -67,12 +67,18 @@ if ! gcloud secrets describe studio-database-url >/dev/null 2>&1; then
     gcloud secrets create studio-database-url --data-file=-
 fi
 
+echo "==> OpenAI API key"
+if ! gcloud secrets describe studio-openai-api-key >/dev/null 2>&1; then
+  : "${OPENAI_API_KEY:?Set OPENAI_API_KEY on first deploy (stored in Secret Manager)}"
+  printf '%s' "$OPENAI_API_KEY" | gcloud secrets create studio-openai-api-key --data-file=-
+fi
+
 echo "==> Building images ($TAG)"
 gcloud builds submit backend --tag "$IMAGE_BASE/backend:$TAG"
 
 COMMON_ENV="ENV=production,AUTH_MODE=firebase,GCP_PROJECT_ID=$PROJECT_ID,STORAGE_BACKEND=gcs,GCS_BUCKET=$BUCKET"
 COMMON_FLAGS=(--region "$REGION" --service-account "$SA" --add-cloudsql-instances "$CONN"
-  --set-secrets "DATABASE_URL=studio-database-url:latest")
+  --set-secrets "DATABASE_URL=studio-database-url:latest,OPENAI_API_KEY=studio-openai-api-key:latest")
 
 echo "==> Migrations"
 gcloud run jobs deploy studio-migrate --image "$IMAGE_BASE/backend:$TAG" "${COMMON_FLAGS[@]}" \

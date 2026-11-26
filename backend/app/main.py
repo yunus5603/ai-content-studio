@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import assets, files, jobs, me, workspaces
+from app.api.routes import assets, catalog, files, jobs, me, prompts, shares, workspaces
 from app.core.config import get_settings
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +25,7 @@ def create_app() -> FastAPI:
     async def healthz():
         return {"ok": True}
 
-    for module in (me, workspaces, assets, jobs):
+    for module in (me, workspaces, assets, jobs, catalog, prompts, shares):
         app.include_router(module.router, prefix="/v1")
     if settings.storage_backend == "local":
         app.include_router(files.router)

@@ -1,0 +1,684 @@
+# AI Content Studio model catalog.
+#
+# Add, retire or re-price models here. Each model lists the operations it
+# supports, the parameters the UI should offer, validation rules and pricing.
+# `pricing.verified: false` means the price came from secondary sources and must
+# be checked against the provider's price list before charging customers.
+#
+# Reviewed 2026-11-26. Notes:
+# - OpenAI shut down Sora and the Videos API on 2026-09-24, so video is Veo only.
+# - Google retired Imagen on Vertex AI (2026-06-30); Google images use Gemini image models.
+# - gpt-image-1.5 / gpt-image-1-mini shut down 2026-12-01 and are not listed.
+
+x-openai-quality-26: &openai_quality_26
+  name: quality
+  label: Quality
+  type: enum
+  default: medium
+  options:
+    - { value: low, label: Low (fastest, cheapest) }
+    - { value: medium, label: Medium }
+    - { value: high, label: High }
+    - { value: xhigh, label: Extra high }
+    - { value: max, label: Max (slowest, most detail) }
+  help: Higher quality takes longer and costs more.
+
+x-openai-size: &openai_size
+  name: size
+  label: Size
+  type: size
+  default: 1024x1024
+  options:
+    - { value: auto, label: Auto }
+    - { value: 1024x1024, label: Square 1024 }
+    - { value: 1536x1024, label: Landscape 1536x1024 }
+    - { value: 1024x1536, label: Portrait 1024x1536 }
+    - { value: 2048x2048, label: Square 2K }
+    - { value: 2560x1440, label: Landscape 1440p }
+    - { value: 1440x2560, label: Portrait 1440p }
+    - { value: 3840x2160, label: Landscape 4K (experimental) }
+    - { value: 2160x3840, label: Portrait 4K (experimental) }
+  size_rules: { multiple: 16, max_edge: 3840, max_ratio: 3, min_pixels: 655360, max_pixels: 8294400 }
+  help: Or type a custom WIDTHxHEIGHT (multiples of 16, up to 3840px).
+
+x-openai-n: &openai_n
+  name: n
+  label: Images
+  type: int
+  default: 1
+  min: 1
+  max: 8
+
+x-openai-background: &openai_background
+  name: background
+  label: Background
+  type: enum
+  default: auto
+  options: [{ value: auto, label: Auto }, { value: opaque, label: Opaque }, { value: transparent, label: Transparent }]
+  advanced: true
+  help: Transparent needs PNG or WebP output.
+
+x-openai-compression: &openai_compression
+  name: output_compression
+  label: Compression
+  type: int
+  min: 0
+  max: 100
+  advanced: true
+  when: { output_format: [jpeg, webp] }
+
+x-openai-moderation: &openai_moderation
+  name: moderation
+  label: Moderation
+  type: enum
+  default: auto
+  options: [{ value: auto, label: Standard }, { value: low, label: Less restrictive }]
+  advanced: true
+
+x-openai-fidelity: &openai_fidelity
+  name: input_fidelity
+  label: Input fidelity
+  type: enum
+  default: high
+  options: [{ value: high, label: High (preserve faces and details) }, { value: low, label: Low }]
+  operations: [image_edit, inpaint]
+  advanced: true
+
+x-openai-edit-ops: &openai_edit_ops
+  - operation: text_to_image
+  - operation: image_edit
+    inputs: [{ role: image, label: Reference images, min: 1, max: 16 }]
+  - operation: inpaint
+    inputs:
+      - { role: image, label: Image to edit, min: 1, max: 1 }
+      - { role: mask, label: Mask, min: 1, max: 1 }
+
+x-openai-token-rates: &openai_token_rates
+  text_input_tokens: 5.0
+  image_input_tokens: 8.0
+  output_tokens: 30.0
+
+x-gemini-aspect: &gemini_aspect
+  name: aspect_ratio
+  label: Aspect ratio
+  type: enum
+  default: "1:1"
+  options:
+    - { value: "1:1" }
+    - { value: "3:2" }
+    - { value: "2:3" }
+    - { value: "4:3" }
+    - { value: "3:4" }
+    - { value: "5:4" }
+    - { value: "4:5" }
+    - { value: "16:9" }
+    - { value: "9:16" }
+    - { value: "21:9" }
+
+x-gemini-n: &gemini_n
+  name: n
+  label: Images
+  type: int
+  default: 1
+  min: 1
+  max: 4
+  help: Each image is a separate request.
+
+x-veo-params: &veo_params
+  - name: duration_seconds
+    label: Length
+    type: enum
+    default: 8
+    options: [{ value: 4, label: 4 seconds }, { value: 6, label: 6 seconds }, { value: 8, label: 8 seconds }]
+  - name: aspect_ratio
+    label: Aspect ratio
+    type: enum
+    default: "16:9"
+    options: [{ value: "16:9", label: Landscape 16:9 }, { value: "9:16", label: Portrait 9:16 }]
+  - name: resolution
+    label: Resolution
+    type: enum
+    default: 720p
+    options: [{ value: 720p }, { value: 1080p }]
+  - name: generate_audio
+    label: Generate audio
+    type: bool
+    default: true
+    help: Dialogue, sound effects and ambience. Video without audio costs less.
+  - name: number_of_videos
+    label: Videos
+    type: int
+    default: 1
+    min: 1
+    max: 4
+  - name: negative_prompt
+    label: Avoid
+    type: text
+    max: 2000
+    advanced: true
+    help: Things you don't want in the video.
+  - name: seed
+    label: Seed
+    type: int
+    min: 0
+    max: 4294967295
+    advanced: true
+    help: Reuse a seed to get similar results.
+  - name: person_generation
+    label: People
+    type: enum
+    default: allow_adult
+    options: [{ value: allow_adult, label: Allow adults }, { value: dont_allow, label: "Don't generate people" }]
+    advanced: true
+
+x-veo-rules: &veo_rules
+  - if: { resolution: [1080p] }
+    then: { duration_seconds: [8] }
+    message: 1080p videos must be 8 seconds long.
+
+x-veo-ops: &veo_ops
+  - operation: text_to_video
+  - operation: image_to_video
+    inputs:
+      - { role: first_frame, label: First frame, min: 1, max: 1 }
+      - { role: last_frame, label: Last frame (optional), min: 0, max: 1 }
+
+models:
+  # ---------------------------------------------------------------- OpenAI
+  - id: openai/gpt-image-2.6-sunburst
+    provider: openai
+    model: gpt-image-2.6-sunburst
+    adapter: openai_image
+    name: GPT Image 2.6 Sunburst
+    family: GPT Image
+    media_type: image
+    description: OpenAI's most detailed image model. Best for complex scenes, text in images and consistent edits.
+    tags: [best-quality, text-rendering, editing, gif]
+    operations: *openai_edit_ops
+    params:
+      - *openai_quality_26
+      - *openai_size
+      - *openai_n
+      - name: output_format
+        label: Format
+        type: enum
+        default: png
+        options: [{ value: png, label: PNG }, { value: jpeg, label: JPEG }, { value: webp, label: WebP }, { value: gif, label: Animated GIF }]
+      - name: frame_count
+        label: GIF frames
+        type: int
+        default: 9
+        min: 2
+        max: 16
+        when: { output_format: [gif] }
+        operations: [text_to_image]
+      - name: frame_duration_ms
+        label: Frame duration (ms)
+        type: int
+        default: 200
+        min: 20
+        max: 2000
+        when: { output_format: [gif] }
+        operations: [text_to_image]
+      - name: complexity
+        label: Complexity
+        type: enum
+        default: high
+        options: [{ value: low }, { value: medium }, { value: high }]
+        advanced: true
+        help: Low is recommended for simple edits and is faster.
+      - *openai_background
+      - *openai_compression
+      - *openai_fidelity
+      - *openai_moderation
+    rules:
+      - if: { output_format: [gif] }
+        then: { n: [1] }
+        message: Animated GIFs are generated one at a time.
+    pricing:
+      unit: image
+      quantity_param: n
+      area_param: size
+      rates:
+        - { when: { quality: [low] }, usd: 0.0247 }
+        - { when: { quality: [medium] }, usd: 0.0435 }
+        - { when: { quality: [high] }, usd: 0.0527 }
+        - { when: { quality: [xhigh] }, usd: 0.0937 }
+        - { when: { quality: [max] }, usd: 0.2107 }
+      token_rates: *openai_token_rates
+      source: OpenAI pricing page token rates; per-image token counts from OpenAI's calculator (via eesel.ai), 1024x1024
+      verified: false
+
+  - id: openai/gpt-image-2.6-flare
+    provider: openai
+    model: gpt-image-2.6-flare
+    adapter: openai_image
+    name: GPT Image 2.6 Flare
+    family: GPT Image
+    media_type: image
+    description: Fast version of GPT Image 2.6 for quick iterations.
+    tags: [fast, editing, gif]
+    operations: *openai_edit_ops
+    params:
+      - *openai_quality_26
+      - *openai_size
+      - *openai_n
+      - name: output_format
+        label: Format
+        type: enum
+        default: png
+        options: [{ value: png, label: PNG }, { value: jpeg, label: JPEG }, { value: webp, label: WebP }, { value: gif, label: Animated GIF }]
+      - name: frame_count
+        label: GIF frames
+        type: int
+        default: 9
+        min: 2
+        max: 16
+        when: { output_format: [gif] }
+        operations: [text_to_image]
+      - name: frame_duration_ms
+        label: Frame duration (ms)
+        type: int
+        default: 200
+        min: 20
+        max: 2000
+        when: { output_format: [gif] }
+        operations: [text_to_image]
+      - name: complexity
+        label: Complexity
+        type: enum
+        default: high
+        options: [{ value: low }, { value: medium }, { value: high }]
+        advanced: true
+      - *openai_background
+      - *openai_compression
+      - *openai_fidelity
+      - *openai_moderation
+    rules:
+      - if: { output_format: [gif] }
+        then: { n: [1] }
+        message: Animated GIFs are generated one at a time.
+    pricing:
+      unit: image
+      quantity_param: n
+      area_param: size
+      rates:
+        - { when: { quality: [low] }, usd: 0.0247 }
+        - { when: { quality: [medium] }, usd: 0.0435 }
+        - { when: { quality: [high] }, usd: 0.0527 }
+        - { when: { quality: [xhigh] }, usd: 0.0937 }
+        - { when: { quality: [max] }, usd: 0.2107 }
+      token_rates: *openai_token_rates
+      source: Assumed same token pricing as Sunburst; confirm on OpenAI pricing page
+      verified: false
+
+  - id: openai/gpt-image-2.5-sunburst
+    provider: openai
+    model: gpt-image-2.5-sunburst
+    adapter: openai_image
+    name: GPT Image 2.5 Sunburst
+    family: GPT Image
+    media_type: image
+    description: Previous-generation detailed model. Cheaper at low and medium quality.
+    tags: [editing, value]
+    operations: *openai_edit_ops
+    params:
+      - *openai_quality_26
+      - *openai_size
+      - *openai_n
+      - name: output_format
+        label: Format
+        type: enum
+        default: png
+        options: [{ value: png, label: PNG }, { value: jpeg, label: JPEG }, { value: webp, label: WebP }]
+      - *openai_background
+      - *openai_compression
+      - *openai_fidelity
+      - *openai_moderation
+    pricing:
+      unit: image
+      quantity_param: n
+      area_param: size
+      rates:
+        - { when: { quality: [low] }, usd: 0.0059 }
+        - { when: { quality: [medium] }, usd: 0.0132 }
+        - { when: { quality: [high] }, usd: 0.0527 }
+        - { when: { quality: [xhigh] }, usd: 0.0937 }
+        - { when: { quality: [max] }, usd: 0.2107 }
+      token_rates: *openai_token_rates
+      source: OpenAI pricing page token rates; per-image token counts via eesel.ai
+      verified: false
+
+  - id: openai/gpt-image-2.5-flare
+    provider: openai
+    model: gpt-image-2.5-flare
+    adapter: openai_image
+    name: GPT Image 2.5 Flare
+    family: GPT Image
+    media_type: image
+    description: Previous-generation fast model. Cheapest OpenAI option for drafts.
+    tags: [fast, value]
+    operations: *openai_edit_ops
+    params:
+      - *openai_quality_26
+      - *openai_size
+      - *openai_n
+      - name: output_format
+        label: Format
+        type: enum
+        default: png
+        options: [{ value: png, label: PNG }, { value: jpeg, label: JPEG }, { value: webp, label: WebP }]
+      - *openai_background
+      - *openai_compression
+      - *openai_fidelity
+      - *openai_moderation
+    pricing:
+      unit: image
+      quantity_param: n
+      area_param: size
+      rates:
+        - { when: { quality: [low] }, usd: 0.0059 }
+        - { when: { quality: [medium] }, usd: 0.0132 }
+        - { when: { quality: [high] }, usd: 0.0527 }
+        - { when: { quality: [xhigh] }, usd: 0.0937 }
+        - { when: { quality: [max] }, usd: 0.2107 }
+      token_rates: *openai_token_rates
+      source: Assumed same as 2.5 Sunburst; confirm on OpenAI pricing page
+      verified: false
+
+  - id: openai/gpt-image-2
+    provider: openai
+    model: gpt-image-2
+    adapter: openai_image
+    name: GPT Image 2
+    family: GPT Image
+    media_type: image
+    description: Older GPT Image model, kept until OpenAI retires it.
+    status: deprecated
+    shutdown_date: "2027-02-10"
+    operations: *openai_edit_ops
+    params:
+      - name: quality
+        label: Quality
+        type: enum
+        default: medium
+        options: [{ value: low }, { value: medium }, { value: high }]
+      - *openai_size
+      - *openai_n
+      - name: output_format
+        label: Format
+        type: enum
+        default: png
+        options: [{ value: png, label: PNG }, { value: jpeg, label: JPEG }, { value: webp, label: WebP }]
+      - *openai_background
+      - *openai_compression
+      - *openai_moderation
+    pricing:
+      unit: image
+      quantity_param: n
+      area_param: size
+      rates:
+        - { when: { quality: [low] }, usd: 0.0059 }
+        - { when: { quality: [medium] }, usd: 0.0132 }
+        - { when: { quality: [high] }, usd: 0.0527 }
+      token_rates: *openai_token_rates
+      source: Assumed same as 2.5; confirm on OpenAI pricing page
+      verified: false
+
+  # ---------------------------------------------------------------- Google images
+  - id: vertex/gemini-nano-banana-2.1
+    provider: vertex
+    model: gemini-nano-banana-2.1
+    adapter: vertex_gemini_image
+    name: Nano Banana 2.1
+    family: Gemini Image
+    media_type: image
+    description: Google's newest image model. Strong at following instructions and editing with up to 14 reference images.
+    tags: [best-quality, editing, references]
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 14 }]
+    params:
+      - *gemini_aspect
+      - name: image_size
+        label: Resolution
+        type: enum
+        default: 1K
+        options: [{ value: 1K }, { value: 2K }, { value: 4K }]
+      - *gemini_n
+    pricing:
+      unit: image
+      quantity_param: n
+      rates:
+        - { when: { image_size: [1K] }, usd: 0.0336 }
+        - { when: { image_size: [2K] }, usd: 0.0504 }
+        - { when: { image_size: [4K] }, usd: 0.113 }
+      source: Secondary source (wireflow.ai); not on the readable Gemini pricing page
+      verified: false
+
+  - id: vertex/gemini-3.1-flash-image
+    provider: vertex
+    model: gemini-3.1-flash-image
+    adapter: vertex_gemini_image
+    name: Gemini 3.1 Flash Image
+    family: Gemini Image
+    media_type: image
+    description: Fast Gemini image model with editing and up to 14 reference images.
+    tags: [fast, editing, references]
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 14 }]
+    params:
+      - *gemini_aspect
+      - name: image_size
+        label: Resolution
+        type: enum
+        default: 1K
+        options: [{ value: 1K }, { value: 2K }, { value: 4K }]
+      - *gemini_n
+    pricing:
+      unit: image
+      quantity_param: n
+      rates:
+        - { when: { image_size: [1K] }, usd: 0.067 }
+        - { when: { image_size: [2K] }, usd: 0.101 }
+        - { when: { image_size: [4K] }, usd: 0.151 }
+      source: Gemini API pricing page (ai.google.dev), Nov 2026; confirm Vertex price
+      verified: false
+
+  - id: vertex/gemini-3-pro-image
+    provider: vertex
+    model: gemini-3-pro-image
+    adapter: vertex_gemini_image
+    name: Gemini 3 Pro Image
+    family: Gemini Image
+    media_type: image
+    description: Google's highest-fidelity image model, with style and character references.
+    tags: [best-quality, references]
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 14 }]
+    params:
+      - *gemini_aspect
+      - name: image_size
+        label: Resolution
+        type: enum
+        default: 1K
+        options: [{ value: 1K }, { value: 2K }, { value: 4K }]
+      - *gemini_n
+    pricing:
+      unit: image
+      quantity_param: n
+      rates:
+        - { when: { image_size: [1K, 2K] }, usd: 0.134 }
+        - { when: { image_size: [4K] }, usd: 0.24 }
+      source: Gemini API pricing page (ai.google.dev), Nov 2026; confirm Vertex price
+      verified: false
+
+  - id: vertex/gemini-3.1-flash-lite-image
+    provider: vertex
+    model: gemini-3.1-flash-lite-image
+    adapter: vertex_gemini_image
+    name: Gemini 3.1 Flash Lite Image
+    family: Gemini Image
+    media_type: image
+    description: Cheapest Google image model, 1K output. Good for drafts.
+    tags: [value, fast]
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 14 }]
+    params:
+      - *gemini_aspect
+      - *gemini_n
+    pricing:
+      unit: image
+      quantity_param: n
+      rates: [{ usd: 0.0336 }]
+      source: Secondary source (wireflow.ai)
+      verified: false
+
+  - id: vertex/gemini-2.5-flash-image
+    provider: vertex
+    model: gemini-2.5-flash-image
+    adapter: vertex_gemini_image
+    name: Gemini 2.5 Flash Image
+    family: Gemini Image
+    media_type: image
+    description: Original Nano Banana. Retiring in March 2027.
+    status: deprecated
+    shutdown_date: "2027-03-15"
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 3 }]
+    params:
+      - *gemini_aspect
+      - *gemini_n
+    pricing:
+      unit: image
+      quantity_param: n
+      rates: [{ usd: 0.039 }]
+      source: Gemini API pricing page (ai.google.dev), Nov 2026; confirm Vertex price
+      verified: false
+
+  # ---------------------------------------------------------------- Google video
+  - id: vertex/veo-3.1-generate-001
+    provider: vertex
+    model: veo-3.1-generate-001
+    adapter: vertex_veo
+    name: Veo 3.1
+    family: Veo
+    media_type: video
+    description: Google's best video model. Cinematic quality with native audio, up to 1080p.
+    tags: [best-quality, audio]
+    operations: *veo_ops
+    params: *veo_params
+    rules: *veo_rules
+    pricing:
+      unit: second
+      seconds_param: duration_seconds
+      quantity_param: number_of_videos
+      rates:
+        - { when: { generate_audio: [true] }, usd: 0.40 }
+        - { usd: 0.20 }
+      source: Vertex AI pricing as of late 2025 (not re-checked); confirm before billing
+      verified: false
+
+  - id: vertex/veo-3.1-fast-generate-001
+    provider: vertex
+    model: veo-3.1-fast-generate-001
+    adapter: vertex_veo
+    name: Veo 3.1 Fast
+    family: Veo
+    media_type: video
+    description: Faster, cheaper Veo 3.1 for drafts and social clips.
+    tags: [fast, audio, value]
+    operations: *veo_ops
+    params: *veo_params
+    rules: *veo_rules
+    pricing:
+      unit: second
+      seconds_param: duration_seconds
+      quantity_param: number_of_videos
+      rates:
+        - { when: { generate_audio: [true] }, usd: 0.15 }
+        - { usd: 0.10 }
+      source: Vertex AI pricing as of late 2025 (not re-checked); confirm before billing
+      verified: false
+
+  - id: vertex/veo-3.1-lite-generate-001
+    provider: vertex
+    model: veo-3.1-lite-generate-001
+    adapter: vertex_veo
+    name: Veo 3.1 Lite
+    family: Veo
+    media_type: video
+    description: Google's most cost-efficient Veo model (preview).
+    status: preview
+    tags: [value]
+    operations: *veo_ops
+    params: *veo_params
+    rules: *veo_rules
+    pricing:
+      unit: second
+      seconds_param: duration_seconds
+      quantity_param: number_of_videos
+      rates:
+        - { when: { generate_audio: [true] }, usd: 0.10 }
+        - { usd: 0.05 }
+      source: Placeholder estimate; price not found. Confirm before billing
+      verified: false
+
+# Only loaded when ENABLE_DEBUG_OPERATIONS=true (local development and tests).
+debug_models:
+  - id: debug/pixel
+    provider: debug
+    model: pixel
+    adapter: debug_pixel
+    name: Debug pixel
+    family: Debug
+    media_type: image
+    description: Returns a 1x1 image instantly. For testing the pipeline.
+    operations:
+      - operation: text_to_image
+      - operation: image_edit
+        inputs: [{ role: image, label: Reference images, min: 1, max: 4 }]
+    params:
+      - { name: n, label: Images, type: int, default: 1, min: 1, max: 4 }
+      - { name: placeholder, label: Gradient placeholder, type: bool, default: false }
+      - { name: fail, label: Fail on purpose, type: bool, default: false, advanced: true }
+    pricing:
+      unit: image
+      quantity_param: n
+      rates: [{ usd: 0.01 }]
+      source: test
+      verified: true
+
+  - id: debug/clip
+    provider: debug
+    model: clip
+    adapter: debug_clip
+    name: Debug clip
+    family: Debug
+    media_type: video
+    description: Simulates a 5-second video job and returns a test pattern clip (needs ffmpeg).
+    operations:
+      - operation: text_to_video
+      - operation: image_to_video
+        inputs: [{ role: first_frame, label: First frame, min: 1, max: 1 }]
+    params:
+      - name: duration_seconds
+        label: Length
+        type: enum
+        default: 4
+        options: [{ value: 4, label: 4 seconds }, { value: 8, label: 8 seconds }]
+    pricing:
+      unit: second
+      seconds_param: duration_seconds
+      rates: [{ usd: 0.01 }]
+      source: test
+      verified: true

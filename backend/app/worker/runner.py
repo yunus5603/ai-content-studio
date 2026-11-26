@@ -14,11 +14,14 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.catalog import get_model
+from app.catalog.pricing import cost_from_usage
+from app.catalog.schema import ModelSpec
 from app.core.config import Settings
 from app.models import Asset, AssetKind, Job, JobStatus
+from app.providers import ProviderError, get_adapter
 from app.services.media import EXTENSIONS
 from app.services.storage import Storage
-from app.worker.registry import UnknownOperation, resolve
 
 log = logging.getLogger("studio.worker")
 HEARTBEAT_SECONDS = 15
@@ -29,10 +32,36 @@ def _now() -> datetime:
 
 
 class JobContext:
-    def __init__(self, job: Job, sessions: async_sessionmaker[AsyncSession], storage: Storage):
+    """What an adapter needs: the job, its catalog entry, inputs, and ways to report back."""
+
+    def __init__(
+        self,
+        job: Job,
+        spec: ModelSpec,
+        sessions: async_sessionmaker[AsyncSession],
+        storage: Storage,
+    ):
         self.job = job
+        self.spec = spec
+        self.params = job.params or {}
         self._sessions = sessions
         self.storage = storage
+        self.usage: dict[str, int] | None = None
+        self._inputs: dict[str, list[tuple[Asset, bytes]]] = {}
+
+    async def load_inputs(self) -> None:
+        ids = [uuid.UUID(i["asset_id"]) for i in self.job.inputs or []]
+        if not ids:
+            return
+        async with self._sessions() as s:
+            assets = {a.id: a for a in await s.scalars(select(Asset).where(Asset.id.in_(ids)))}
+        for item in self.job.inputs:
+            asset = assets[uuid.UUID(item["asset_id"])]
+            data = await self.storage.get(asset.storage_key)
+            self._inputs.setdefault(item["role"], []).append((asset, data))
+
+    def inputs(self, role: str) -> list[tuple[Asset, bytes]]:
+        return self._inputs.get(role, [])
 
     async def report_progress(self, progress: float) -> None:
         async with self._sessions() as s:
@@ -44,19 +73,19 @@ class JobContext:
             await s.commit()
 
     async def set_external_id(self, external_id: str) -> None:
+        self.job.external_id = external_id
         async with self._sessions() as s:
             await s.execute(
                 update(Job).where(Job.id == self.job.id).values(external_id=external_id)
             )
             await s.commit()
 
-    async def load_inputs(self) -> list[tuple[Asset, bytes]]:
-        ids = [uuid.UUID(i) for i in self.job.input_asset_ids]
-        if not ids:
-            return []
+    async def is_canceled(self) -> bool:
         async with self._sessions() as s:
-            assets = {a.id: a for a in await s.scalars(select(Asset).where(Asset.id.in_(ids)))}
-        return [(assets[i], await self.storage.get(assets[i].storage_key)) for i in ids]
+            return (
+                await s.scalar(select(Job.status).where(Job.id == self.job.id))
+                == JobStatus.canceled
+            )
 
 
 async def claim_next(sessions: async_sessionmaker[AsyncSession]) -> Job | None:
@@ -113,9 +142,7 @@ async def requeue_stale(sessions: async_sessionmaker[AsyncSession], settings: Se
 async def run_job(
     job: Job, sessions: async_sessionmaker[AsyncSession], storage: Storage, settings: Settings
 ) -> None:
-    ctx = JobContext(job, sessions, storage)
-
-    async def heartbeat():
+    async def heartbeat() -> None:
         while True:
             await asyncio.sleep(HEARTBEAT_SECONDS)
             async with sessions() as s:
@@ -123,11 +150,22 @@ async def run_job(
                 await s.commit()
 
     beat = asyncio.create_task(heartbeat())
+    ctx: JobContext | None = None
     try:
-        op = resolve(job.provider, job.model, job.operation, settings.enable_debug_operations)
-        outputs = await asyncio.wait_for(op.handler(ctx), timeout=settings.job_timeout_seconds)
-    except (UnknownOperation, TimeoutError, Exception) as exc:  # noqa: B014
-        message = ("Timed out" if isinstance(exc, TimeoutError) else str(exc)) or type(exc).__name__
+        spec = get_model(job.model, include_debug=settings.enable_debug_operations)
+        ctx = JobContext(job, spec, sessions, storage)
+        await ctx.load_inputs()
+        adapter = get_adapter(spec.adapter)
+        outputs = await asyncio.wait_for(adapter(ctx), timeout=settings.job_timeout_seconds)
+    except Exception as exc:
+        if isinstance(exc, ProviderError):
+            message = str(exc)
+        elif isinstance(exc, TimeoutError):
+            message = "The generation timed out"
+        else:
+            # Unexpected errors: log details, show a generic message.
+            log.exception("job %s crashed", job.id)
+            message = "Something went wrong while generating. Please try again."
         log.warning("job %s failed: %s", job.id, message)
         async with sessions() as s:
             await s.execute(
@@ -169,6 +207,9 @@ async def run_job(
             )
         current.status = JobStatus.succeeded
         current.progress = 1.0
+        current.usage = ctx.usage
+        actual = cost_from_usage(ctx.spec, ctx.usage)
+        current.cost_usd = actual if actual is not None else current.estimated_cost_usd
         current.finished_at = _now()
         await s.commit()
     log.info("job %s succeeded with %d output(s)", job.id, len(outputs))

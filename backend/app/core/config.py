@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     job_max_attempts: int = 3
     enable_debug_operations: bool = False
 
+    # Providers
+    openai_api_key: str | None = None
+    # Vertex AI region. "global" serves the Gemini models; Veo may need e.g. us-central1.
+    vertex_location: str = "global"
+    vertex_video_location: str = "us-central1"
+    # Model used to rewrite prompts ("Enhance prompt").
+    prompt_enhancer_model: str = "gemini-3.5-flash-lite"
+
     # Free credits granted to each new personal workspace (used from step 3).
     signup_free_credits: int = 100
 
