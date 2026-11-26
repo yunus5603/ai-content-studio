@@ -8,6 +8,7 @@ from app.api.routes import (
     assets,
     billing,
     catalog,
+    copilot,
     files,
     jobs,
     me,
@@ -37,18 +38,7 @@ def create_app() -> FastAPI:
     async def healthz():
         return {"ok": True}
 
-    for module in (
-        me,
-        workspaces,
-        assets,
-        jobs,
-        catalog,
-        prompts,
-        shares,
-        billing,
-        admin,
-        storyboards,
-    ):
+    for module in (me, workspaces, assets, jobs, catalog, prompts, shares, billing, admin, copilot):
         app.include_router(module.router, prefix="/v1")
     if settings.storage_backend == "local":
         app.include_router(files.router)

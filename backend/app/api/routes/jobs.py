@@ -15,7 +15,9 @@ from app.models import Asset, Job, JobStatus
 from app.models.billing import to_usd
 from app.models.job import TERMINAL
 from app.schemas import JobCreate, JobOut, Page
-from app.services import billing, generation
+from app.services import billing
+from app.services.copilot import executor as copilot
+from app.services.jobs import InputRef, JobError, submit_job
 from app.services.storage import Storage, get_storage
 from app.services.workspaces import WorkspaceAccess
 
@@ -45,17 +47,18 @@ async def create_job(
 ):
     access.require(Action.generate)
     try:
-        job = await generation.submit_job(
+        job = await submit_job(
             session,
-            access,
-            settings,
+            access.workspace,
+            access.user.id,
             model=body.model,
             operation=body.operation,
             prompt=body.prompt,
             params=body.params,
-            inputs=[{"asset_id": str(i.asset_id), "role": i.role} for i in body.inputs],
+            inputs=[InputRef(i.asset_id, i.role) for i in body.inputs],
+            include_debug=settings.enable_debug_operations,
         )
-    except generation.GenerationError as exc:
+    except JobError as exc:
         await session.rollback()
         raise HTTPException(exc.status_code, str(exc)) from exc
     await session.commit()
@@ -107,6 +110,7 @@ async def cancel_job(
     access: WorkspaceAccess = Depends(workspace_access),
     session: AsyncSession = Depends(get_session),
     storage: Storage = Depends(get_storage),
+    settings: Settings = Depends(get_settings),
 ):
     job = await _get_job(session, access, job_id)
     if job.created_by_id != access.user.id:
@@ -122,4 +126,7 @@ async def cancel_job(
         # so a running job is charged its estimate.
         await billing.settle(session, job, job.hold_micros if was_running else 0)
         await session.commit()
+        if job.plan_id and (plan := await copilot.lock_plan(session, job.plan_id)):
+            await copilot.advance(session, plan, settings)
+            await session.commit()
     return await _job_out(session, job, storage)

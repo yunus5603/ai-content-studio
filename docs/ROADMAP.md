@@ -20,7 +20,7 @@ The first version is built in four steps. Each lands as its own pull request.
    at finish, refunds for failures, monthly limits per workspace and per member,
    usage reports, and a staff admin page.
 
-4. **Copilot**
+4. **Copilot** (done)
    An assistant that turns a rough idea into a plan: improves the prompt, picks
    models and settings, chains steps (image, then animate), shows the estimated
    cost and asks before spending.

@@ -12,7 +12,7 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 
 const nav = [
   { href: "/studio", label: "Create" },
-  { href: "/studio/storyboards", label: "Storyboards" },
+  { href: "/studio/copilot", label: "Copilot" },
   { href: "/studio/gallery", label: "Gallery" },
   { href: "/studio/jobs", label: "Jobs" },
   { href: "/studio/team", label: "Team" },
