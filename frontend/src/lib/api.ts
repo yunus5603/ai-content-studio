@@ -63,6 +63,8 @@ export type Job = {
   estimated_price_usd: number;
   cost_usd: number | null;
   price_usd: number | null;
+  hold_micros: number;
+  charged_micros: number | null;
   outputs: Asset[];
 };
 
@@ -112,7 +114,64 @@ export type Share = {
   include_prompt: boolean;
 };
 
-export type Member = { user: User; role: Role; created_at: string };
+export type Member = { user: User; role: Role; created_at: string; monthly_limit_micros: number | null };
+
+export type BillingSummary = {
+  balance_usd: number;
+  spent_this_month_usd: number;
+  my_spent_this_month_usd: number;
+  monthly_limit_usd: number | null;
+  my_monthly_limit_usd: number | null;
+  credit_packs_usd: number[];
+  payments_enabled: boolean;
+  dev_topup_enabled: boolean;
+  platform_fee: number;
+};
+export type CreditEntry = {
+  id: string;
+  kind: "signup_grant" | "purchase" | "job_hold" | "job_settle" | "adjustment";
+  amount_micros: number;
+  balance_after_micros: number;
+  job_id: string | null;
+  user_id: string | null;
+  description: string | null;
+  created_at: string;
+};
+export type UsageRow = { key: string; label: string; jobs: number; spent_usd: number };
+export type UsageReport = {
+  days: number;
+  total_usd: number;
+  jobs: number;
+  by_day: UsageRow[];
+  by_model: UsageRow[];
+  by_member: UsageRow[];
+};
+export type AdminOverview = {
+  days: number;
+  revenue_usd: number;
+  customer_spend_usd: number;
+  provider_cost_usd: number;
+  margin_usd: number;
+  outstanding_credit_usd: number;
+  free_credit_granted_usd: number;
+  jobs: number;
+  failed_jobs: number;
+  users: number;
+  new_users: number;
+  workspaces: number;
+  by_model: UsageRow[];
+  by_day: UsageRow[];
+};
+export type AdminWorkspaceRow = {
+  id: string;
+  name: string;
+  owner_email: string;
+  balance_usd: number;
+  purchased_usd: number;
+  spent_usd: number;
+  jobs: number;
+  created_at: string;
+};
 export type Invitation = { id: string; workspace_id: string; email: string; role: Role; created_at: string };
 export type MyInvitation = Invitation & { workspace_name: string };
 export type Page<T> = { items: T[]; next_cursor: string | null };

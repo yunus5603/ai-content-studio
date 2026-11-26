@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { type Invitation, type Member, type Role, useApi } from "@/lib/api";
+import { usd } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 
 const assignable: Role[] = ["viewer", "member", "admin"];
@@ -96,6 +97,30 @@ export default function TeamPage() {
                 <p className="text-xs text-zinc-500">{m.user.email}</p>
               </div>
               <div className="flex items-center gap-3">
+                {!current.is_personal &&
+                  (manage ? (
+                    <button
+                      title="Monthly spending limit for this person"
+                      onClick={() => {
+                        const cur = m.monthly_limit_micros != null ? String(m.monthly_limit_micros / 1e6) : "";
+                        const v = prompt(`Monthly spending limit for ${m.user.email} in USD (empty for none)`, cur);
+                        if (v === null) return;
+                        act(() =>
+                          api(`${base}/members/${m.user.id}/limit`, {
+                            method: "PUT",
+                            body: JSON.stringify({ monthly_limit_usd: v.trim() === "" ? null : Number(v) }),
+                          }),
+                        );
+                      }}
+                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-400 hover:text-white"
+                    >
+                      {m.monthly_limit_micros != null ? `${usd(m.monthly_limit_micros / 1e6)}/mo` : "No limit"}
+                    </button>
+                  ) : (
+                    m.monthly_limit_micros != null && (
+                      <span className="text-xs text-zinc-500">{usd(m.monthly_limit_micros / 1e6)}/mo</span>
+                    )
+                  ))}
                 {manage && m.role !== "owner" ? (
                   <select
                     value={m.role}

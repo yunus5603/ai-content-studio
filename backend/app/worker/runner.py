@@ -15,11 +15,13 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.catalog import get_model
-from app.catalog.pricing import cost_from_usage
+from app.catalog.pricing import cost_from_usage, with_fee
 from app.catalog.schema import ModelSpec
 from app.core.config import Settings
 from app.models import Asset, AssetKind, Job, JobStatus
+from app.models.billing import to_micros
 from app.providers import ProviderError, get_adapter
+from app.services import billing
 from app.services.media import EXTENSIONS
 from app.services.storage import Storage
 
@@ -88,6 +90,19 @@ class JobContext:
             )
 
 
+def _final_cost(ctx: JobContext, job: Job, produced: int) -> float:
+    """Provider cost: from token usage when the provider reports it, else the estimate
+    scaled to what was actually produced (e.g. 2 of 3 images)."""
+    actual = cost_from_usage(ctx.spec, ctx.usage)
+    if actual is not None:
+        return actual
+    pricing = ctx.spec.pricing
+    requested = int(job.params.get(pricing.quantity_param, 1)) if pricing.quantity_param else 1
+    if requested and produced < requested:
+        return round(job.estimated_cost_usd * produced / requested, 6)
+    return job.estimated_cost_usd
+
+
 async def claim_next(sessions: async_sessionmaker[AsyncSession]) -> Job | None:
     async with sessions() as s:
         next_id = (
@@ -117,26 +132,29 @@ async def requeue_stale(sessions: async_sessionmaker[AsyncSession], settings: Se
     """Return jobs whose worker vanished to the queue, or fail them after max attempts."""
     cutoff = _now() - timedelta(seconds=HEARTBEAT_SECONDS * 8)
     async with sessions() as s:
-        failed = await s.execute(
-            update(Job)
-            .where(
-                Job.status == JobStatus.running,
-                Job.heartbeat_at < cutoff,
-                Job.attempts >= settings.job_max_attempts,
+        dead = (
+            await s.scalars(
+                select(Job)
+                .where(
+                    Job.status == JobStatus.running,
+                    Job.heartbeat_at < cutoff,
+                    Job.attempts >= settings.job_max_attempts,
+                )
+                .with_for_update(skip_locked=True)
             )
-            .values(
-                status=JobStatus.failed,
-                finished_at=_now(),
-                error="The job stopped responding and ran out of retries",
-            )
-        )
+        ).all()
+        for job in dead:
+            job.status = JobStatus.failed
+            job.finished_at = _now()
+            job.error = "The job stopped responding and ran out of retries"
+            await billing.settle(s, job, 0)
         requeued = await s.execute(
             update(Job)
             .where(Job.status == JobStatus.running, Job.heartbeat_at < cutoff)
             .values(status=JobStatus.queued)
         )
         await s.commit()
-        return failed.rowcount + requeued.rowcount
+        return len(dead) + requeued.rowcount
 
 
 async def run_job(
@@ -168,18 +186,19 @@ async def run_job(
             message = "Something went wrong while generating. Please try again."
         log.warning("job %s failed: %s", job.id, message)
         async with sessions() as s:
-            await s.execute(
-                update(Job)
-                .where(Job.id == job.id, Job.status == JobStatus.running)
-                .values(status=JobStatus.failed, error=message[:2000], finished_at=_now())
-            )
+            current = await billing.lock_job(s, job.id)
+            if current is not None and current.status == JobStatus.running:
+                current.status = JobStatus.failed
+                current.error = message[:2000]
+                current.finished_at = _now()
+                await billing.settle(s, current, 0)  # failed jobs are free
             await s.commit()
         return
     finally:
         beat.cancel()
 
     async with sessions() as s:
-        current = await s.get(Job, job.id)
+        current = await billing.lock_job(s, job.id)
         if current is None or current.status != JobStatus.running:  # canceled meanwhile
             return
         for media in outputs:
@@ -208,8 +227,8 @@ async def run_job(
         current.status = JobStatus.succeeded
         current.progress = 1.0
         current.usage = ctx.usage
-        actual = cost_from_usage(ctx.spec, ctx.usage)
-        current.cost_usd = actual if actual is not None else current.estimated_cost_usd
+        current.cost_usd = _final_cost(ctx, current, len(outputs))
+        await billing.settle(s, current, to_micros(with_fee(current.cost_usd)))
         current.finished_at = _now()
         await s.commit()
     log.info("job %s succeeded with %d output(s)", job.id, len(outputs))

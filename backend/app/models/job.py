@@ -3,7 +3,18 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -45,6 +56,10 @@ class Job(IdMixin, TimestampMixin, Base):
     estimated_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     cost_usd: Mapped[float | None] = mapped_column(Float)
     usage: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    # What the customer pays (provider cost + platform fee), in micro-USD.
+    hold_micros: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    charged_micros: Mapped[int | None] = mapped_column(BigInteger)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     status: Mapped[JobStatus] = mapped_column(
         Enum(JobStatus, name="job_status"), default=JobStatus.queued

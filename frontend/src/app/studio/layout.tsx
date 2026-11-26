@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { BillingProvider, useBilling } from "@/lib/billing";
+import { usd } from "@/lib/format";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 
 const nav = [
@@ -13,7 +15,24 @@ const nav = [
   { href: "/studio/gallery", label: "Gallery" },
   { href: "/studio/jobs", label: "Jobs" },
   { href: "/studio/team", label: "Team" },
+  { href: "/studio/billing", label: "Billing" },
 ];
+
+function BalanceChip() {
+  const { billing } = useBilling();
+  if (!billing) return null;
+  const low = billing.balance_usd < 0.5;
+  return (
+    <Link
+      href="/studio/billing"
+      id="balance-chip"
+      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${low ? "border-amber-400/40 bg-amber-400/10" : "border-white/10 bg-white/5"} hover:border-white/30`}
+    >
+      <span className="text-zinc-400">Credits</span>
+      <span className={`font-medium tabular-nums ${low ? "text-amber-300" : "text-white"}`}>{usd(billing.balance_usd)}</span>
+    </Link>
+  );
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { me, current, select, refresh, error } = useWorkspace();
@@ -67,6 +86,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <option value="__new">+ New team workspace</option>
           </select>
         </div>
+        <BalanceChip />
         <nav className="flex gap-1 overflow-x-auto md:flex-col">
           {nav.map((n) => (
             <Link
@@ -77,6 +97,14 @@ function Shell({ children }: { children: React.ReactNode }) {
               {n.label}
             </Link>
           ))}
+          {me.user.is_platform_admin && (
+            <Link
+              href="/studio/admin"
+              className={`rounded-lg px-3 py-2 text-sm ${pathname === "/studio/admin" ? "bg-white/10 text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
+            >
+              Admin
+            </Link>
+          )}
           {me.pending_invitations > 0 && (
             <Link href="/studio/invitations" className="rounded-lg px-3 py-2 text-sm text-violet-300 hover:bg-white/5">
               Invitations ({me.pending_invitations})
@@ -104,7 +132,9 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
   if (loading || !user) return <div className="grid min-h-screen place-items-center text-zinc-500">Loading…</div>;
   return (
     <WorkspaceProvider key={user.email}>
-      <Shell>{children}</Shell>
+      <BillingProvider>
+        <Shell>{children}</Shell>
+      </BillingProvider>
     </WorkspaceProvider>
   );
 }

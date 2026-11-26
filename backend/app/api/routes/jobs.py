@@ -13,8 +13,10 @@ from app.core.config import Settings, get_settings
 from app.core.db import get_session
 from app.core.permissions import Action
 from app.models import Asset, Job, JobStatus
+from app.models.billing import to_usd
 from app.models.job import TERMINAL
 from app.schemas import JobCreate, JobOut, Page
+from app.services import billing
 from app.services.storage import Storage, get_storage
 from app.services.workspaces import WorkspaceAccess
 
@@ -25,8 +27,10 @@ MAX_ACTIVE_JOBS_PER_WORKSPACE = 20
 
 async def _job_out(session: AsyncSession, job: Job, storage: Storage) -> JobOut:
     out = JobOut.model_validate(job)
-    out.estimated_price_usd = with_fee(job.estimated_cost_usd)
-    out.price_usd = with_fee(job.cost_usd) if job.cost_usd is not None else None
+    out.estimated_price_usd = (
+        to_usd(job.hold_micros) if job.hold_micros else with_fee(job.estimated_cost_usd)
+    )
+    out.price_usd = to_usd(job.charged_micros) if job.charged_micros is not None else None
     outputs = await session.scalars(
         select(Asset).where(Asset.job_id == job.id).order_by(Asset.created_at)
     )
@@ -104,6 +108,7 @@ async def create_job(
         )
 
     job = Job(
+        id=uuid.uuid4(),
         workspace_id=access.workspace.id,
         created_by_id=access.user.id,
         operation=body.operation,
@@ -115,6 +120,14 @@ async def create_job(
         estimated_cost_usd=estimate_cost(spec, params),
     )
     session.add(job)
+    await session.flush()
+    try:
+        await billing.reserve(
+            session, access.workspace, access.user.id, job, with_fee(job.estimated_cost_usd)
+        )
+    except billing.BillingError as exc:
+        await session.rollback()
+        raise HTTPException(exc.status_code, str(exc)) from exc
     await session.commit()
     return await _job_out(session, job, storage)
 
@@ -170,8 +183,13 @@ async def cancel_job(
         access.require(Action.manage_members)
     else:
         access.require(Action.generate)
+    job = await billing.lock_job(session, job.id)
     if job.status not in TERMINAL:
+        was_running = job.status == JobStatus.running
         job.status = JobStatus.canceled
         job.finished_at = datetime.now(UTC)
+        # Queued jobs are refunded. Once a provider has started, it charges us anyway,
+        # so a running job is charged its estimate.
+        await billing.settle(session, job, job.hold_micros if was_running else 0)
         await session.commit()
     return await _job_out(session, job, storage)

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AssetPicker, useUpload } from "@/components/asset-picker";
@@ -21,6 +22,7 @@ import {
 import { IMAGE_OPS, VIDEO_OPS, activeValues, defaultsFor, modelsFor, paramsFor, useCatalog } from "@/lib/catalog";
 import { usd } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
+import { monthlyRoom, useBilling } from "@/lib/billing";
 
 const OP_HINTS: Record<Operation, string> = {
   text_to_image: "Describe the image you want…",
@@ -57,6 +59,7 @@ function CreateStudio() {
   const params = useSearchParams();
   const { current, can } = useWorkspace();
   const { catalog, error: catalogError } = useCatalog();
+  const { billing, refreshBilling } = useBilling();
   const upload = useUpload(current?.id ?? "");
 
   const [media, setMedia] = useState<"image" | "video">("image");
@@ -66,7 +69,7 @@ function CreateStudio() {
   const [inputs, setInputs] = useState<Partial<Record<InputRole, Asset[]>>>({});
   const [prompt, setPrompt] = useState("");
   const [estimate, setEstimate] = useState<Estimate | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ message: string; billing?: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -120,13 +123,19 @@ function CreateStudio() {
         setProblem(null);
       } catch (e) {
         setEstimate(null);
-        setProblem(e instanceof Error ? e.message : "Invalid settings");
+        setProblem({ message: e instanceof Error ? e.message : "Invalid settings" });
       }
     }, 250);
     return () => clearTimeout(timer);
   }, [api, model, op, values]);
 
-  const onJobUpdate = useCallback((job: Job) => setJobs((all) => all.map((j) => (j.id === job.id ? job : j))), []);
+  const onJobUpdate = useCallback(
+    (job: Job) => {
+      setJobs((all) => all.map((j) => (j.id === job.id ? job : j)));
+      if (!["queued", "running"].includes(job.status)) refreshBilling();
+    },
+    [refreshBilling],
+  );
   useJobPolling(current?.id, jobs, onJobUpdate);
 
   if (!current) return null;
@@ -134,6 +143,15 @@ function CreateStudio() {
   if (!catalog) return <p className="text-zinc-500">Loading models…</p>;
 
   const canGenerate = can("generate");
+  const room = billing ? monthlyRoom(billing) : null;
+  const short =
+    billing && estimate
+      ? estimate.price_usd > billing.balance_usd
+        ? "Not enough credits for this generation."
+        : room != null && estimate.price_usd > room
+          ? "This would go over the monthly spending limit."
+          : null
+      : null;
   const missing = (opSpec?.inputs ?? []).filter((spec) => (inputs[spec.role]?.length ?? 0) < spec.min);
 
   function switchMedia(next: "image" | "video") {
@@ -169,7 +187,7 @@ function CreateStudio() {
       });
       setPrompt(r.prompt);
     } catch (e) {
-      setProblem(e instanceof Error ? e.message : "Couldn't enhance the prompt");
+      setProblem({ message: e instanceof Error ? e.message : "Couldn't enhance the prompt" });
     } finally {
       setEnhancing(false);
     }
@@ -191,8 +209,12 @@ function CreateStudio() {
         }),
       });
       setJobs((all) => [job, ...all]);
+      refreshBilling();
     } catch (e) {
-      setProblem(e instanceof ApiError || e instanceof Error ? e.message : "Couldn't start the generation");
+      setProblem({
+        message: e instanceof Error ? e.message : "Couldn't start the generation",
+        billing: e instanceof ApiError && (e.status === 402 || (e.status === 403 && e.message.includes("limit"))),
+      });
     } finally {
       setSubmitting(false);
     }
@@ -208,7 +230,7 @@ function CreateStudio() {
       const mask = await upload(blob, "mask.png");
       setInputs((cur) => ({ ...cur, mask: [mask] }));
     } catch (e) {
-      setProblem(e instanceof Error ? e.message : "Couldn't save the mask");
+      setProblem({ message: e instanceof Error ? e.message : "Couldn't save the mask" });
     }
   }
 
@@ -320,8 +342,13 @@ function CreateStudio() {
             </button>
             <div className="ml-auto flex items-center gap-3">
               {estimate && (
-                <span className="text-sm text-zinc-400" title="Provider price plus 10% platform fee">
+                <span className="text-right text-sm text-zinc-400" title="Provider price plus 10% platform fee">
                   ≈ {usd(estimate.price_usd)}
+                  {billing && (
+                    <span className={`block text-xs ${short ? "text-amber-300" : "text-zinc-500"}`}>
+                      {usd(billing.balance_usd)} left
+                    </span>
+                  )}
                 </span>
               )}
               <button
@@ -334,7 +361,24 @@ function CreateStudio() {
             </div>
           </div>
           {missing.length > 0 && <p className="mt-2 text-xs text-zinc-500">Add: {missing.map((m) => m.label).join(", ")}</p>}
-          {problem && <p className="mt-2 text-sm text-red-400">{problem}</p>}
+          {short && !problem && (
+            <p className="mt-2 text-sm text-amber-300">
+              {short}{" "}
+              <Link href="/studio/billing" className="underline underline-offset-2">
+                {short.startsWith("Not enough") ? "Buy credits" : "See billing"}
+              </Link>
+            </p>
+          )}
+          {problem && (
+            <p className="mt-2 text-sm text-red-400">
+              {problem.message}{" "}
+              {problem.billing && (
+                <Link href="/studio/billing" className="text-white underline underline-offset-2">
+                  Go to billing
+                </Link>
+              )}
+            </p>
+          )}
         </div>
 
         <div className="mt-8 space-y-3">
