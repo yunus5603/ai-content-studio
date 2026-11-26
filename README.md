@@ -67,8 +67,25 @@ npm run dev
 ```
 
 Local mode uses **dev auth** (sign in with any email, no password) and stores media in
-`backend/.media`. "Run test job" on the Create page exercises the full queue with a
-built-in debug model until real models land in step 2.
+`backend/.media`. With `ENABLE_DEBUG_OPERATIONS=true` the model picker also offers
+**Debug pixel** (instant placeholder images) and **Debug clip** (a simulated video job,
+needs ffmpeg), so you can try every screen without spending provider credits.
+
+To use real models locally, set `OPENAI_API_KEY`, `GCP_PROJECT_ID` and sign in to Google
+Cloud (`gcloud auth application-default login`). Check that every catalog model is
+reachable with `uv run python -m scripts.check_models`.
+
+## Models
+
+The model list lives in `backend/app/catalog/models.yaml`: each model's operations,
+parameters (the UI builds its controls from these), validation rules and prices. Add,
+retire or re-price a model there; no code change needed for a new model on an existing
+adapter. Prices marked `verified: false` came from secondary sources and must be checked
+against the provider price lists before billing customers (step 3).
+
+As of November 2026: OpenAI GPT Image 2.6 / 2.5 / 2 for images (Sora was shut down in
+September 2026), Google Gemini image models (Nano Banana 2.1, 3.1 Flash, 3 Pro, Flash Lite)
+and Veo 3.1 / Fast / Lite for video.
 
 ### Tests
 
@@ -84,7 +101,7 @@ cd frontend && npm run lint && npm run build
 2. Run:
 
    ```bash
-   PROJECT_ID=your-project REGION=us-central1 FIREBASE_API_KEY=... ./infra/deploy.sh
+   PROJECT_ID=your-project REGION=us-central1 OPENAI_API_KEY=sk-... FIREBASE_API_KEY=... ./infra/deploy.sh
    ```
 
    This creates the bucket, Cloud SQL database, service account, runs migrations, and

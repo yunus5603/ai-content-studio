@@ -2,14 +2,14 @@
 
 The first version is built in four steps. Each lands as its own pull request.
 
-1. **Foundation** (this PR)
+1. **Foundation** (done)
    Landing page and app shell (Next.js), Python API (FastAPI), Postgres, Cloud Storage,
    a Postgres-backed job queue and worker, Google Identity Platform sign-in, and
    workspaces with Owner / Admin / Member / Viewer roles. Deploys to Cloud Run.
 
-2. **Generation engine**
+2. **Generation engine** (done)
    A config-driven model catalog covering every image and video model in OpenAI
-   (GPT Image, Sora) and Vertex AI (Imagen, Veo), with the parameters each one
+   (GPT Image) and Vertex AI (Gemini image, Veo), with the parameters each one
    supports. The UI builds its controls from the catalog. Text to image, image
    edit and inpainting, text to video, image to video, prompt enhancement, live
    job progress, share links.

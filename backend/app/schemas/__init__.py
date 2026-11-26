@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -91,13 +91,17 @@ class AssetOut(ORM):
     url: str | None = None
 
 
+class JobInput(BaseModel):
+    asset_id: uuid.UUID
+    role: Literal["image", "mask", "first_frame", "last_frame"]
+
+
 class JobCreate(BaseModel):
+    model: str = Field(examples=["openai/gpt-image-2.6-sunburst"])
     operation: str = Field(examples=["text_to_image"])
-    provider: str = Field(examples=["openai"])
-    model: str = Field(examples=["gpt-image-1"])
-    prompt: str | None = Field(default=None, max_length=32000)
+    prompt: str = Field(min_length=1, max_length=32000)
     params: dict[str, Any] = Field(default_factory=dict)
-    input_asset_ids: list[uuid.UUID] = Field(default_factory=list, max_length=16)
+    inputs: list[JobInput] = Field(default_factory=list, max_length=20)
 
 
 class JobOut(ORM):
@@ -109,15 +113,66 @@ class JobOut(ORM):
     model: str
     prompt: str | None
     params: dict[str, Any]
-    input_asset_ids: list[str]
+    inputs: list[dict[str, str]]
     status: JobStatus
     progress: float
     error: str | None
     attempts: int
+    estimated_cost_usd: float
+    cost_usd: float | None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
     outputs: list[AssetOut] = []
+    estimated_price_usd: float = 0.0
+    price_usd: float | None = None
+
+
+class EstimateRequest(BaseModel):
+    model: str
+    operation: str
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+class EstimateOut(BaseModel):
+    params: dict[str, Any]
+    provider_cost_usd: float
+    price_usd: float
+
+
+class EnhanceRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=8000)
+    model: str | None = None
+    operation: str | None = None
+
+
+class EnhanceOut(BaseModel):
+    prompt: str
+
+
+class ShareCreate(BaseModel):
+    include_prompt: bool = False
+    expires_in_days: int | None = Field(default=None, ge=1, le=365)
+
+
+class ShareOut(ORM):
+    id: uuid.UUID
+    token: str
+    asset_id: uuid.UUID
+    created_at: datetime
+    expires_at: datetime | None
+    include_prompt: bool = False
+
+
+class PublicShareOut(BaseModel):
+    media_type: str
+    content_type: str
+    url: str
+    width: int | None
+    height: int | None
+    created_at: datetime
+    prompt: str | None = None
+    model_name: str | None = None
 
 
 class Page[T](BaseModel):

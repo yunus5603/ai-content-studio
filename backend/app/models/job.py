@@ -31,13 +31,20 @@ class Job(IdMixin, TimestampMixin, Base):
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
     )
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    # e.g. operation="text_to_image", provider="openai", model="gpt-image-1"
+    # operation="text_to_image", model="openai/gpt-image-2.6-sunburst" (catalog id)
     operation: Mapped[str] = mapped_column(String(64))
     provider: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(String(128))
     prompt: Mapped[str | None] = mapped_column(Text)
+    # Validated params with defaults filled in, exactly as sent to the provider.
     params: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    input_asset_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    # [{"asset_id": "...", "role": "image" | "mask" | "first_frame" | "last_frame"}]
+    inputs: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
+
+    # Provider cost in USD: estimate at submit time, actual when known.
+    estimated_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    cost_usd: Mapped[float | None] = mapped_column(Float)
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     status: Mapped[JobStatus] = mapped_column(
         Enum(JobStatus, name="job_status"), default=JobStatus.queued

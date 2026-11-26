@@ -2,15 +2,15 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 
 const features = [
-  { title: "Text to image", body: "Describe it and get images from GPT Image or Imagen, at every size and quality they offer." },
+  { title: "Text to image", body: "Describe it and get images from GPT Image or Gemini, at every size and quality they offer." },
   { title: "Edit and inpaint", body: "Upload a photo, mask an area, and change just that part." },
-  { title: "Text and image to video", body: "Turn a prompt or a still into a clip with Sora or Veo." },
+  { title: "Text and image to video", body: "Turn a prompt or a still into a clip with sound using Google Veo 3.1." },
   { title: "Copilot", body: "Not sure which model fits? Describe the goal and the copilot picks the model, settings and steps." },
   { title: "Auto-saved gallery", body: "Every result is saved to your workspace with its prompt and settings, ready to share." },
   { title: "Teams and roles", body: "Invite your team as admins, members or viewers. Everyone sees the same library." },
 ];
 
-const models = ["GPT Image", "Sora", "Imagen", "Veo"];
+const models = ["GPT Image 2.6", "Nano Banana 2.1", "Gemini 3 Pro Image", "Veo 3.1"];
 
 export default function Landing() {
   return (

@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import workspace_access
 from app.api.routes.assets import asset_out
+from app.catalog import CatalogError, get_model, validate_params
+from app.catalog.pricing import estimate_cost, with_fee
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
 from app.core.permissions import Action
@@ -15,7 +17,6 @@ from app.models.job import TERMINAL
 from app.schemas import JobCreate, JobOut, Page
 from app.services.storage import Storage, get_storage
 from app.services.workspaces import WorkspaceAccess
-from app.worker.registry import UnknownOperation, resolve
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/jobs", tags=["jobs"])
 
@@ -24,6 +25,8 @@ MAX_ACTIVE_JOBS_PER_WORKSPACE = 20
 
 async def _job_out(session: AsyncSession, job: Job, storage: Storage) -> JobOut:
     out = JobOut.model_validate(job)
+    out.estimated_price_usd = with_fee(job.estimated_cost_usd)
+    out.price_usd = with_fee(job.cost_usd) if job.cost_usd is not None else None
     outputs = await session.scalars(
         select(Asset).where(Asset.job_id == job.id).order_by(Asset.created_at)
     )
@@ -41,20 +44,49 @@ async def create_job(
 ):
     access.require(Action.generate)
     try:
-        resolve(body.provider, body.model, body.operation, settings.enable_debug_operations)
-    except UnknownOperation as exc:
+        spec = get_model(body.model, include_debug=settings.enable_debug_operations)
+        params = validate_params(spec, body.operation, body.params)
+    except CatalogError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    op_spec = spec.operation(body.operation)
 
-    if body.input_asset_ids:
-        found = await session.scalar(
-            select(func.count())
-            .select_from(Asset)
-            .where(Asset.id.in_(body.input_asset_ids), Asset.workspace_id == access.workspace.id)
+    # Inputs: right roles, right counts, assets from this workspace, right media type.
+    asset_ids = {i.asset_id for i in body.inputs}
+    assets = (
+        {
+            a.id: a
+            for a in await session.scalars(
+                select(Asset).where(
+                    Asset.id.in_(asset_ids), Asset.workspace_id == access.workspace.id
+                )
+            )
+        }
+        if asset_ids
+        else {}
+    )
+    if len(assets) != len(asset_ids):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "One or more input files were not found in this workspace",
         )
-        if found != len(set(body.input_asset_ids)):
+    allowed = {i.role: i for i in op_spec.inputs}
+    for item in body.inputs:
+        rule = allowed.get(item.role)
+        if rule is None:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
-                "One or more input files were not found in this workspace",
+                f"{spec.name} doesn't take a {item.role} input for this mode",
+            )
+        if assets[item.asset_id].media_type.value != rule.media_type:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"{rule.label} must be an {rule.media_type}"
+            )
+    for role, rule in allowed.items():
+        count = sum(1 for i in body.inputs if i.role == role)
+        if not rule.min <= count <= rule.max:
+            limit = f"exactly {rule.min}" if rule.min == rule.max else f"{rule.min} to {rule.max}"
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"{rule.label}: provide {limit}"
             )
 
     active = await session.scalar(
@@ -75,11 +107,12 @@ async def create_job(
         workspace_id=access.workspace.id,
         created_by_id=access.user.id,
         operation=body.operation,
-        provider=body.provider,
-        model=body.model,
+        provider=spec.provider,
+        model=spec.id,
         prompt=body.prompt,
-        params=body.params,
-        input_asset_ids=[str(i) for i in body.input_asset_ids],
+        params=params,
+        inputs=[{"asset_id": str(i.asset_id), "role": i.role} for i in body.inputs],
+        estimated_cost_usd=estimate_cost(spec, params),
     )
     session.add(job)
     await session.commit()

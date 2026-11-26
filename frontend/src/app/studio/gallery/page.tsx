@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AssetModal } from "@/components/asset-modal";
 import { MediaTile } from "@/components/media";
 import { type Asset, type Page, useApi } from "@/lib/api";
+import { useCatalog } from "@/lib/catalog";
 import { useWorkspace } from "@/lib/workspace";
 
 const filters = [
@@ -20,6 +22,9 @@ export default function GalleryPage() {
   const [items, setItems] = useState<Asset[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState<Asset | null>(null);
+  const { catalog } = useCatalog();
+  const models = useMemo(() => Object.fromEntries((catalog?.models ?? []).map((m) => [m.id, m])), [catalog]);
 
   const load = useCallback(
     async (after: string | null) => {
@@ -57,9 +62,20 @@ export default function GalleryPage() {
       {!loading && items.length === 0 && <p className="mt-10 text-zinc-500">Nothing here yet.</p>}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((a) => (
-          <MediaTile key={a.id} asset={a} />
+          <MediaTile key={a.id} asset={a} onOpen={setOpen} />
         ))}
       </div>
+      {open && (
+        <AssetModal
+          asset={open}
+          models={models}
+          onClose={() => setOpen(null)}
+          onDeleted={(id) => {
+            setItems((all) => all.filter((a) => a.id !== id));
+            setOpen(null);
+          }}
+        />
+      )}
       {cursor && (
         <button onClick={() => load(cursor)} className="mt-6 rounded-lg border border-white/15 px-4 py-2 text-sm">
           Load more
