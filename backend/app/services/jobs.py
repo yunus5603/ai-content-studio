@@ -42,6 +42,9 @@ async def submit_job(
     inputs: list[InputRef],
     include_debug: bool,
     plan_id: uuid.UUID | None = None,
+    storyboard_id: uuid.UUID | None = None,
+    include_internal: bool = False,
+    check_active: bool = True,
 ) -> Job:
     """Create a queued job and hold its price. Flushes; the caller commits.
 
@@ -49,7 +52,8 @@ async def submit_job(
     back (or use a savepoint) when it does.
     """
     try:
-        spec = get_model(model, include_debug=include_debug)
+        # include_internal: studio-side steps such as storyboard assembly (never user-picked).
+        spec = get_model(model, include_debug=include_debug, include_internal=include_internal)
         params = validate_params(spec, operation, params)
     except CatalogError as exc:
         raise JobError(422, str(exc)) from exc
@@ -90,7 +94,8 @@ async def submit_job(
             Job.status.in_([JobStatus.queued, JobStatus.running]),
         )
     )
-    if active >= MAX_ACTIVE_JOBS_PER_WORKSPACE:
+    # check_active=False: the caller already checked room for a whole batch.
+    if check_active and active >= MAX_ACTIVE_JOBS_PER_WORKSPACE:
         raise JobError(429, "Too many generations in progress. Wait for some to finish.")
 
     job = Job(
@@ -105,11 +110,14 @@ async def submit_job(
         inputs=[{"asset_id": str(i.asset_id), "role": i.role} for i in inputs],
         estimated_cost_usd=estimate_cost(spec, params),
         plan_id=plan_id,
+        storyboard_id=storyboard_id,
     )
     session.add(job)
     await session.flush()
-    try:
-        await billing.reserve(session, workspace, user_id, job, with_fee(job.estimated_cost_usd))
-    except billing.BillingError as exc:
-        raise JobError(exc.status_code, str(exc)) from exc
+    price = with_fee(job.estimated_cost_usd)
+    if price > 0:  # free internal steps (e.g. joining clips) never touch the ledger
+        try:
+            await billing.reserve(session, workspace, user_id, job, price)
+        except billing.BillingError as exc:
+            raise JobError(exc.status_code, str(exc)) from exc
     return job

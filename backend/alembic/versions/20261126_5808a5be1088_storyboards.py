@@ -1,7 +1,7 @@
 """storyboards
 
 Revision ID: 5808a5be1088
-Revises: 60a71e323b27
+Revises: d0355a97f76c
 Create Date: 2026-11-26 19:45:38.186911
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "5808a5be1088"
-down_revision: Union[str, Sequence[str], None] = "60a71e323b27"
+down_revision: Union[str, Sequence[str], None] = "d0355a97f76c"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
