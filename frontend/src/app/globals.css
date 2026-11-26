@@ -1,19 +1,372 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens (light theme).
+ * Use the semantic utilities below in components instead of raw palette colors:
+ *   bg-canvas (page), bg-surface (cards, inputs), bg-surface-2 (subtle fills, hover),
+ *   text-ink (primary text), text-ink-2 (secondary), text-muted, text-subtle,
+ *   border-line, border-line-strong, bg-brand / text-brand (accent).
+ * Shared building blocks: .btn .btn-primary .btn-secondary .btn-ghost .btn-brand,
+ * .card .card-hover .input .chip .label .eyebrow .text-gradient, plus motion helpers
+ * .animate-fade-up .animate-fade-in .animate-scale-in .reveal .skeleton .stagger.
+ */
 :root {
-  --background: #0b0b10;
-  --foreground: #ececf1;
+  --canvas: #f8f7f4;
+  --surface: #ffffff;
+  --surface-2: #f2f1ed;
+  --surface-3: #e9e7e1;
+  --line: #e7e5df;
+  --line-strong: #d6d3cb;
+  --ink: #16151a;
+  --ink-2: #3b3a42;
+  --muted: #5d5c66;
+  --subtle: #8b8a93;
+  --brand: #5b4cf0;
+  --brand-ink: #4637d6;
+  --brand-soft: #eeecff;
+  --accent-pink: #f0508c;
+  --accent-amber: #f59e42;
+  --success: #12936b;
+  --danger: #d6384a;
+  --warning: #b86e00;
+  --ring: rgb(91 76 240 / 0.35);
+  --shadow-sm: 0 1px 2px rgb(22 21 26 / 0.05), 0 1px 1px rgb(22 21 26 / 0.03);
+  --shadow-md: 0 1px 2px rgb(22 21 26 / 0.04), 0 6px 20px -6px rgb(22 21 26 / 0.12);
+  --shadow-lg: 0 2px 6px rgb(22 21 26 / 0.04), 0 24px 48px -16px rgb(22 21 26 / 0.22);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-soft: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+  --ease-out-expo: var(--ease-out);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), border-color 0.2s var(--ease-out),
+      box-shadow 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-lg {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.95rem;
+  }
+  .btn-sm {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, var(--shadow-sm);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #2b2a32;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, var(--shadow-md);
+  }
+  .btn-brand {
+    background: linear-gradient(135deg, var(--brand) 0%, #7a4cf0 55%, var(--accent-pink) 130%);
+    color: #fff;
+    box-shadow: 0 6px 18px -6px rgb(91 76 240 / 0.6);
+  }
+  .btn-brand:hover:not(:disabled) {
+    box-shadow: 0 10px 26px -8px rgb(91 76 240 / 0.7);
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--subtle);
+    background: var(--surface);
+  }
+  .btn-ghost {
+    color: var(--muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-hover {
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.35s var(--ease-out);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--line-strong);
+  }
+
+  .input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--ink);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input::placeholder {
+    color: var(--subtle);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--subtle);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--line);
+    background: rgb(255 255 255 / 0.7);
+    backdrop-filter: blur(8px);
+    padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .text-gradient {
+    background: linear-gradient(100deg, var(--brand) 0%, #9b4cf0 45%, var(--accent-pink) 75%, var(--accent-amber) 110%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    background: rgb(255 255 255 / 0.72);
+    backdrop-filter: saturate(1.6) blur(14px);
+    -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+}
+
+/* Motion */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, -6%) scale(1.08);
+  }
+  66% {
+    transform: translate(-5%, 4%) scale(0.95);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s var(--ease-out) both;
+}
+.animate-page {
+  /* "backwards" so no transform lingers after the animation: a lingering transform would trap fixed-position modals. */
+  animation: fade-up 0.5s var(--ease-out) backwards;
+}
+.animate-fade-in {
+  animation: fade-in 0.5s var(--ease-out) both;
+}
+.animate-scale-in {
+  animation: scale-in 0.35s var(--ease-out) both;
+}
+.animate-float {
+  animation: float 7s ease-in-out infinite;
+}
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+.animate-blob {
+  animation: blob 18s ease-in-out infinite;
+}
+/* Children appear one after another. */
+.stagger > * {
+  animation: fade-up 0.6s var(--ease-out) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.3s; }
+.stagger > *:nth-child(n + 9) { animation-delay: 0.34s; }
+
+/* Scroll reveal: elements with .reveal fade up when they enter the viewport (see components/reveal.tsx). */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
+  transition-delay: var(--reveal-delay, 0s);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

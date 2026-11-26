@@ -18,7 +18,7 @@ export function MediaTile({ asset, onOpen }: { asset: Asset; onOpen?: (asset: As
         // eslint-disable-next-line @next/next/no-img-element -- signed URLs from storage
         <img src={asset.url} alt={asset.filename ?? "Generated image"} className="aspect-square w-full object-cover" />
       )}
-      <div className="flex justify-between gap-2 truncate px-3 py-2 text-xs text-zinc-500">
+      <div className="flex justify-between gap-2 truncate px-3 py-2 text-xs text-subtle">
         <span>
           {asset.kind === "upload" ? "Upload" : "Generated"}
           {asset.media_type === "video" && " · video"}
@@ -27,7 +27,7 @@ export function MediaTile({ asset, onOpen }: { asset: Asset; onOpen?: (asset: As
       </div>
     </>
   );
-  const cls = "group block w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 text-left hover:border-white/30";
+  const cls = "group block w-full overflow-hidden rounded-xl border border-line bg-surface text-left hover:border-subtle";
   if (onOpen) {
     return (
       <button type="button" onClick={() => onOpen(asset)} className={cls}>

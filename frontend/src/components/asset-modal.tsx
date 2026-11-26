@@ -74,12 +74,12 @@ export function AssetModal({
   const model = job ? models[job.model] : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/30 backdrop-blur-sm animate-fade-in p-4" onClick={onClose}>
       <div
-        className="grid max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 md:grid-cols-[1fr_320px]"
+        className="grid max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-line bg-surface shadow-float animate-scale-in md:grid-cols-[1fr_320px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-center bg-black p-2">
+        <div className="flex items-center justify-center bg-surface-2 p-2">
           {asset.media_type === "video" ? (
             <video src={asset.url ?? undefined} className="max-h-[80vh] w-full" controls autoPlay loop playsInline />
           ) : (
@@ -91,45 +91,45 @@ export function AssetModal({
           <div className="flex items-start justify-between">
             <div>
               <p className="font-medium">{asset.kind === "output" ? model?.name ?? "Generated" : asset.filename ?? "Upload"}</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-subtle">
                 {new Date(asset.created_at).toLocaleString()} · {bytes(asset.size_bytes)}
                 {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
               </p>
             </div>
-            <button onClick={onClose} className="text-zinc-400 hover:text-white" aria-label="Close">✕</button>
+            <button onClick={onClose} className="text-muted hover:text-ink" aria-label="Close">✕</button>
           </div>
 
           {job?.prompt && (
             <div>
-              <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">Prompt</p>
-              <p className="whitespace-pre-wrap text-zinc-300">{job.prompt}</p>
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mb-1 text-xs uppercase tracking-wide text-subtle">Prompt</p>
+              <p className="whitespace-pre-wrap text-ink-2">{job.prompt}</p>
+              <p className="mt-2 text-xs text-subtle">
                 {Object.entries(job.params).map(([k, v]) => `${k}: ${v}`).join(" · ")}
               </p>
-              {job.price_usd != null && <p className="mt-1 text-xs text-zinc-500">Cost {usd(job.price_usd)}</p>}
+              {job.price_usd != null && <p className="mt-1 text-xs text-subtle">Cost {usd(job.price_usd)}</p>}
             </div>
           )}
 
           <div className="flex flex-wrap gap-2">
-            <a href={asset.url ?? "#"} download className="rounded-lg bg-white px-3 py-1.5 font-medium text-black">Download</a>
+            <a href={asset.url ?? "#"} download className="btn btn-primary">Download</a>
             {asset.media_type === "image" && can("generate") && (
               <>
-                <Link href={`/studio?input=${asset.id}`} className="rounded-lg border border-white/15 px-3 py-1.5">Edit</Link>
-                <Link href={`/studio?input=${asset.id}&op=image_to_video`} className="rounded-lg border border-white/15 px-3 py-1.5">Animate</Link>
+                <Link href={`/studio?input=${asset.id}`} className="rounded-lg border border-line-strong px-3 py-1.5">Edit</Link>
+                <Link href={`/studio?input=${asset.id}&op=image_to_video`} className="rounded-lg border border-line-strong px-3 py-1.5">Animate</Link>
               </>
             )}
             {canDelete && (
-              <button onClick={remove} className="rounded-lg border border-white/15 px-3 py-1.5 text-red-300">Delete</button>
+              <button onClick={remove} className="rounded-lg border border-line-strong px-3 py-1.5 text-danger">Delete</button>
             )}
           </div>
 
           {can("generate") && (
             <div>
-              <p className="mb-2 text-xs uppercase tracking-wide text-zinc-500">Share</p>
+              <p className="mb-2 text-xs uppercase tracking-wide text-subtle">Share</p>
               <div className="flex items-center gap-3">
-                <button onClick={share} className="rounded-lg border border-white/15 px-3 py-1.5">Create public link</button>
+                <button onClick={share} className="rounded-lg border border-line-strong px-3 py-1.5">Create public link</button>
                 {job?.prompt && (
-                  <label className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <label className="flex items-center gap-1.5 text-xs text-muted">
                     <input type="checkbox" checked={includePrompt} onChange={(e) => setIncludePrompt(e.target.checked)} />
                     Show prompt
                   </label>
@@ -138,15 +138,15 @@ export function AssetModal({
               <ul className="mt-3 space-y-2">
                 {shares.map((s) => (
                   <li key={s.id} className="flex items-center gap-2 text-xs">
-                    <code className="min-w-0 flex-1 truncate text-zinc-400">{shareUrl(s)}</code>
-                    <button onClick={() => copy(s)} className="text-zinc-300 hover:text-white">{copied === s.id ? "Copied" : "Copy"}</button>
-                    <button onClick={() => revoke(s)} className="text-zinc-500 hover:text-red-400">Revoke</button>
+                    <code className="min-w-0 flex-1 truncate text-muted">{shareUrl(s)}</code>
+                    <button onClick={() => copy(s)} className="text-ink-2 hover:text-ink">{copied === s.id ? "Copied" : "Copy"}</button>
+                    <button onClick={() => revoke(s)} className="text-subtle hover:text-danger">Revoke</button>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          {error && <p className="text-red-400">{error}</p>}
+          {error && <p className="text-danger">{error}</p>}
         </div>
       </div>
     </div>

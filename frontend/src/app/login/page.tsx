@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
+import { AutoVideo } from "@/components/reveal";
 import { useAuth } from "@/lib/auth";
 import { config } from "@/lib/config";
 
@@ -35,9 +36,9 @@ function LoginForm() {
   const dev = config.authMode === "dev";
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-      <h1 className="text-xl font-semibold">{create ? "Create your account" : "Welcome back"}</h1>
-      <p className="mt-1 text-sm text-zinc-400">
+    <div className="w-full max-w-sm animate-fade-up">
+      <h1 className="text-3xl font-semibold tracking-tight">{create ? "Create your account" : "Welcome back"}</h1>
+      <p className="mt-1 text-sm text-muted">
         {create ? "New accounts get free credits to start." : "Sign in to your studio."}
       </p>
 
@@ -45,14 +46,14 @@ function LoginForm() {
         <button
           disabled={busy}
           onClick={() => run(signInWithGoogle)}
-          className="mt-6 w-full rounded-lg bg-white py-2.5 font-medium text-black hover:bg-zinc-200 disabled:opacity-50"
+          className="btn btn-secondary mt-8 w-full py-2.5"
         >
           Continue with Google
         </button>
       )}
 
       <form
-        className="mt-6 space-y-3"
+        className={`${dev ? "mt-8" : "mt-4"} space-y-3`}
         onSubmit={(e) => {
           e.preventDefault();
           run(() => signInWithEmail(email, password, create));
@@ -64,7 +65,7 @@ function LoginForm() {
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 outline-none focus:border-violet-400"
+          className="input py-2.5"
         />
         {!dev && (
           <input
@@ -74,20 +75,20 @@ function LoginForm() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 outline-none focus:border-violet-400"
+            className="input py-2.5"
           />
         )}
         <button
           disabled={busy}
-          className="w-full rounded-lg border border-white/15 py-2.5 hover:bg-white/5 disabled:opacity-50"
+          className="btn btn-primary w-full py-2.5"
         >
           {dev ? "Sign in (dev mode)" : create ? "Create account with email" : "Sign in with email"}
         </button>
       </form>
 
-      {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
 
-      <button onClick={() => setCreate(!create)} className="mt-6 text-sm text-zinc-400 hover:text-white">
+      <button onClick={() => setCreate(!create)} className="mt-6 text-sm text-muted hover:text-ink">
         {create ? "Already have an account? Sign in" : "New here? Create an account"}
       </button>
     </div>
@@ -96,11 +97,31 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4">
-      <Logo />
-      <Suspense>
-        <LoginForm />
-      </Suspense>
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="flex flex-col px-6 py-6 sm:px-10">
+        <Logo />
+        <div className="flex flex-1 items-center justify-center py-12">
+          <Suspense>
+            <LoginForm />
+          </Suspense>
+        </div>
+        <p className="text-xs text-subtle">New accounts start with free credits. No card needed to try it.</p>
+      </div>
+      <div className="relative hidden overflow-hidden p-3 lg:block">
+        <div className="relative h-full overflow-hidden rounded-[1.75rem]">
+          <AutoVideo src="/samples/orbs-loop.mp4" poster="/samples/orbs-loop.jpg" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-10 pt-40 text-white">
+            <p className="max-w-md text-2xl font-medium leading-snug tracking-tight">
+              “Every top image and video model, one prompt box, and a gallery that keeps everything.”
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs">
+              {["GPT Image", "Gemini", "Veo 3.1", "Copilot"].map((m) => (
+                <span key={m} className="rounded-full border border-white/30 bg-white/15 px-3 py-1 backdrop-blur">{m}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

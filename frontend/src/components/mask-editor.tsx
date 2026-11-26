@@ -71,17 +71,17 @@ export function MaskEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/90 p-4">
+    <div className="fixed inset-0 z-50 flex flex-col bg-ink/30 backdrop-blur-sm animate-fade-in p-4">
       <div className="mb-3 flex flex-wrap items-center gap-4 text-sm">
         <span className="font-medium">Paint the area to change</span>
-        <label className="flex items-center gap-2 text-zinc-400">
+        <label className="flex items-center gap-2 text-muted">
           Brush
           <input type="range" min={8} max={160} value={brush} onChange={(e) => setBrush(Number(e.target.value))} />
         </label>
-        <button onClick={clear} className="text-zinc-400 hover:text-white">Clear</button>
+        <button onClick={clear} className="text-muted hover:text-ink">Clear</button>
         <span className="ml-auto flex gap-2">
-          <button onClick={onClose} className="rounded-lg border border-white/15 px-3 py-1.5">Cancel</button>
-          <button onClick={exportMask} className="rounded-lg bg-white px-3 py-1.5 font-medium text-black">Use mask</button>
+          <button onClick={onClose} className="rounded-lg border border-line-strong px-3 py-1.5">Cancel</button>
+          <button onClick={exportMask} className="btn btn-primary">Use mask</button>
         </span>
       </div>
       <div className="relative mx-auto flex min-h-0 flex-1 items-center justify-center">
@@ -108,7 +108,7 @@ export function MaskEditor({
             />
           </div>
         ) : (
-          <p className="text-zinc-500">Loading image…</p>
+          <p className="text-subtle">Loading image…</p>
         )}
       </div>
     </div>

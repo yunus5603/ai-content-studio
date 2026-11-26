@@ -50,12 +50,12 @@ export default function TeamPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-semibold">Team</h1>
-      <p className="mt-1 text-sm text-zinc-400">
+      <p className="mt-1 text-sm text-muted">
         {current.name} · your role: {current.role}
       </p>
 
       {current.is_personal ? (
-        <p className="mt-6 rounded-lg border border-white/10 p-4 text-sm text-zinc-400">
+        <p className="mt-6 rounded-lg border border-line p-4 text-sm text-muted">
           This is your personal workspace. Create a team workspace from the workspace menu to invite people.
         </p>
       ) : (
@@ -73,28 +73,28 @@ export default function TeamPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="teammate@company.com"
-              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2"
+              className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2"
             />
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="rounded-lg border border-white/10 bg-black/40 px-2">
+            <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="rounded-lg border border-line bg-surface px-2">
               {assignable.map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-            <button className="rounded-lg bg-white px-4 py-2 font-medium text-black">Invite</button>
+            <button className="btn btn-primary">Invite</button>
           </form>
         )
       )}
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
-      <h2 className="mt-8 text-sm uppercase tracking-wide text-zinc-500">Members</h2>
-      <ul className="mt-2 divide-y divide-white/10 rounded-xl border border-white/10">
+      <h2 className="mt-8 text-sm uppercase tracking-wide text-subtle">Members</h2>
+      <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
         {members.map((m) => {
           const isMe = m.user.id === me.user.id;
           return (
             <li key={m.user.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
               <div>
-                <p className="text-sm">{m.user.display_name ?? m.user.email} {isMe && <span className="text-zinc-500">(you)</span>}</p>
-                <p className="text-xs text-zinc-500">{m.user.email}</p>
+                <p className="text-sm">{m.user.display_name ?? m.user.email} {isMe && <span className="text-subtle">(you)</span>}</p>
+                <p className="text-xs text-subtle">{m.user.email}</p>
               </div>
               <div className="flex items-center gap-3">
                 {!current.is_personal &&
@@ -112,13 +112,13 @@ export default function TeamPage() {
                           }),
                         );
                       }}
-                      className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-400 hover:text-white"
+                      className="rounded-md border border-line px-2 py-1 text-xs text-muted hover:text-ink"
                     >
                       {m.monthly_limit_micros != null ? `${usd(m.monthly_limit_micros / 1e6)}/mo` : "No limit"}
                     </button>
                   ) : (
                     m.monthly_limit_micros != null && (
-                      <span className="text-xs text-zinc-500">{usd(m.monthly_limit_micros / 1e6)}/mo</span>
+                      <span className="text-xs text-subtle">{usd(m.monthly_limit_micros / 1e6)}/mo</span>
                     )
                   ))}
                 {manage && m.role !== "owner" ? (
@@ -126,14 +126,14 @@ export default function TeamPage() {
                     value={m.role}
                     title={roleHelp[m.role]}
                     onChange={(e) => act(() => api(`${base}/members/${m.user.id}`, { method: "PATCH", body: JSON.stringify({ role: e.target.value }) }))}
-                    className="rounded-md border border-white/10 bg-black/40 px-2 py-1 text-sm"
+                    className="rounded-md border border-line bg-surface px-2 py-1 text-sm"
                   >
                     {assignable.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-sm text-zinc-400" title={roleHelp[m.role]}>{m.role}</span>
+                  <span className="text-sm text-muted" title={roleHelp[m.role]}>{m.role}</span>
                 )}
                 {m.role !== "owner" && (manage || isMe) && (
                   <button
@@ -141,7 +141,7 @@ export default function TeamPage() {
                       await api(`${base}/members/${m.user.id}`, { method: "DELETE" });
                       if (isMe) await refresh();
                     })}
-                    className="text-sm text-zinc-500 hover:text-red-400"
+                    className="text-sm text-subtle hover:text-danger"
                   >
                     {isMe ? "Leave" : "Remove"}
                   </button>
@@ -154,12 +154,12 @@ export default function TeamPage() {
 
       {invites.length > 0 && (
         <>
-          <h2 className="mt-8 text-sm uppercase tracking-wide text-zinc-500">Pending invitations</h2>
-          <ul className="mt-2 divide-y divide-white/10 rounded-xl border border-white/10">
+          <h2 className="mt-8 text-sm uppercase tracking-wide text-subtle">Pending invitations</h2>
+          <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
             {invites.map((i) => (
               <li key={i.id} className="flex items-center justify-between p-3 text-sm">
-                <span>{i.email} <span className="text-zinc-500">as {i.role}</span></span>
-                <button onClick={() => act(() => api(`${base}/invitations/${i.id}`, { method: "DELETE" }))} className="text-zinc-500 hover:text-red-400">
+                <span>{i.email} <span className="text-subtle">as {i.role}</span></span>
+                <button onClick={() => act(() => api(`${base}/invitations/${i.id}`, { method: "DELETE" }))} className="text-subtle hover:text-danger">
                   Revoke
                 </button>
               </li>

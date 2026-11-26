@@ -7,10 +7,10 @@ import { useWorkspace } from "@/lib/workspace";
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <p className="text-xs uppercase tracking-wide text-subtle">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-      {sub && <p className="mt-1 text-xs text-zinc-500">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-subtle">{sub}</p>}
     </div>
   );
 }
@@ -59,21 +59,21 @@ export default function AdminPage() {
     }
   }
 
-  if (!me?.user.is_platform_admin) return <p className="text-zinc-500">Not available.</p>;
+  if (!me?.user.is_platform_admin) return <p className="text-subtle">Not available.</p>;
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Admin</h1>
-          <p className="mt-1 text-sm text-zinc-400">Platform-wide revenue, cost and customers. Only staff see this page.</p>
+          <p className="mt-1 text-sm text-muted">Platform-wide revenue, cost and customers. Only staff see this page.</p>
         </div>
         <div className="flex gap-1 text-sm">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`rounded-full px-3 py-1 ${days === d ? "bg-white text-black" : "border border-white/15 text-zinc-300"}`}
+              className={`rounded-full px-3 py-1 ${days === d ? "bg-ink text-white shadow-soft" : "border border-line-strong text-ink-2"}`}
             >
               {d} days
             </button>
@@ -94,13 +94,13 @@ export default function AdminPage() {
             <Stat label="Workspaces" value={String(overview.workspaces)} />
           </div>
           {overview.by_model.length > 0 && (
-            <div className="mt-6 rounded-xl border border-white/10 p-4">
+            <div className="mt-6 rounded-xl border border-line p-4">
               <h2 className="text-sm font-medium">Spend by model</h2>
-              <ul className="mt-3 divide-y divide-white/5 text-sm">
+              <ul className="mt-3 divide-y divide-line text-sm">
                 {overview.by_model.map((m) => (
                   <li key={m.key} className="flex justify-between py-1.5">
                     <span>{m.label}</span>
-                    <span className="tabular-nums text-zinc-400">{usd(m.spent_usd)} · {m.jobs} jobs</span>
+                    <span className="tabular-nums text-muted">{usd(m.spent_usd)} · {m.jobs} jobs</span>
                   </li>
                 ))}
               </ul>
@@ -115,14 +115,14 @@ export default function AdminPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by workspace or owner email"
-          className="w-full max-w-xs rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+          className="w-full max-w-xs rounded-lg border border-line bg-surface px-3 py-2 text-sm"
         />
       </div>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      <div className="mt-3 overflow-x-auto rounded-xl border border-line">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase tracking-wide text-zinc-500">
-            <tr className="border-b border-white/10">
+          <thead className="text-left text-xs uppercase tracking-wide text-subtle">
+            <tr className="border-b border-line">
               <th className="px-4 py-2 font-normal">Workspace</th>
               <th className="px-4 py-2 font-normal">Owner</th>
               <th className="px-4 py-2 text-right font-normal">Balance</th>
@@ -132,17 +132,17 @@ export default function AdminPage() {
               <th className="px-4 py-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-line">
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className="px-4 py-2">{r.name}</td>
-                <td className="px-4 py-2 text-zinc-400">{r.owner_email}</td>
+                <td className="px-4 py-2 text-muted">{r.owner_email}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{usd(r.balance_usd)}</td>
-                <td className="px-4 py-2 text-right tabular-nums text-zinc-400">{usd(r.purchased_usd)}</td>
-                <td className="px-4 py-2 text-right tabular-nums text-zinc-400">{usd(r.spent_usd)}</td>
-                <td className="px-4 py-2 text-right tabular-nums text-zinc-400">{r.jobs}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-muted">{usd(r.purchased_usd)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-muted">{usd(r.spent_usd)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-muted">{r.jobs}</td>
                 <td className="px-4 py-2 text-right">
-                  <button onClick={() => adjust(r)} className="text-xs text-violet-300 hover:text-white">Adjust credits</button>
+                  <button onClick={() => adjust(r)} className="text-xs text-brand hover:text-ink">Adjust credits</button>
                 </td>
               </tr>
             ))}

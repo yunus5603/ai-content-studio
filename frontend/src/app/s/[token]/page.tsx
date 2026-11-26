@@ -31,15 +31,15 @@ export default function SharedPage() {
     <div className="flex min-h-screen flex-col items-center gap-6 px-4 py-6">
       <header className="flex w-full max-w-5xl items-center justify-between">
         <Logo />
-        <Link href="/login?mode=signup" className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
+        <Link href="/login?mode=signup" className="btn btn-primary">
           Make your own
         </Link>
       </header>
-      {missing && <p className="mt-20 text-zinc-400">This link doesn&apos;t exist or has expired.</p>}
-      {!item && !missing && <p className="mt-20 text-zinc-500">Loading…</p>}
+      {missing && <p className="mt-20 text-muted">This link doesn&apos;t exist or has expired.</p>}
+      {!item && !missing && <p className="mt-20 text-subtle">Loading…</p>}
       {item && (
         <main className="w-full max-w-5xl">
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface-2">
             {item.media_type === "video" ? (
               <video src={item.url} className="max-h-[78vh] w-full" controls autoPlay loop playsInline />
             ) : (
@@ -49,8 +49,8 @@ export default function SharedPage() {
           </div>
           {(item.prompt || item.model_name) && (
             <div className="mt-4 text-sm">
-              {item.model_name && <p className="text-zinc-500">Made with {item.model_name}</p>}
-              {item.prompt && <p className="mt-1 whitespace-pre-wrap text-zinc-300">{item.prompt}</p>}
+              {item.model_name && <p className="text-subtle">Made with {item.model_name}</p>}
+              {item.prompt && <p className="mt-1 whitespace-pre-wrap text-ink-2">{item.prompt}</p>}
             </div>
           )}
         </main>

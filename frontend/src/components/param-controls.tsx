@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ParamSpec, ParamValue } from "@/lib/api";
 import { isActive } from "@/lib/catalog";
 
-const field = "w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-sm outline-none focus:border-violet-400";
+const field = "w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-sm outline-none focus:border-brand";
 
 function SizeControl({ spec, value, onChange }: { spec: ParamSpec; value: ParamValue; onChange: (v: ParamValue) => void }) {
   const preset = spec.options.some((o) => o.value === value);
@@ -42,13 +42,13 @@ function Control({ spec, value, onChange }: { spec: ParamSpec; value: ParamValue
     case "enum":
       if (spec.options.length <= 3 && spec.options.every((o) => String(o.label ?? o.value).length < 14)) {
         return (
-          <div className="flex gap-1 rounded-lg border border-white/10 bg-black/40 p-1">
+          <div className="flex gap-1 rounded-lg border border-line bg-surface p-1">
             {spec.options.map((o) => (
               <button
                 type="button"
                 key={String(o.value)}
                 onClick={() => onChange(o.value)}
-                className={`flex-1 rounded-md px-2 py-1 text-sm ${value === o.value ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                className={`flex-1 rounded-md px-2 py-1 text-sm ${value === o.value ? "bg-ink text-white shadow-soft" : "text-ink-2 hover:bg-surface-2"}`}
               >
                 {o.label ?? String(o.value)}
               </button>
@@ -76,7 +76,7 @@ function Control({ spec, value, onChange }: { spec: ParamSpec; value: ParamValue
           role="switch"
           aria-checked={!!value}
           onClick={() => onChange(!value)}
-          className={`relative h-6 w-11 rounded-full transition ${value ? "bg-violet-500" : "bg-white/15"}`}
+          className={`relative h-6 w-11 rounded-full transition ${value ? "bg-brand" : "bg-surface-3"}`}
         >
           <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${value ? "left-5" : "left-0.5"}`} />
         </button>
@@ -124,11 +124,11 @@ export function ParamControls({
 
   const render = (s: ParamSpec) => (
     <label key={s.name} className="block">
-      <span className="mb-1 flex items-center justify-between text-xs text-zinc-400">
+      <span className="mb-1 flex items-center justify-between text-xs text-muted">
         {s.label}
       </span>
       <Control spec={s} value={values[s.name]} onChange={(v) => onChange(s.name, v)} />
-      {s.help && <span className="mt-1 block text-xs text-zinc-500">{s.help}</span>}
+      {s.help && <span className="mt-1 block text-xs text-subtle">{s.help}</span>}
     </label>
   );
 
@@ -137,7 +137,7 @@ export function ParamControls({
       {basic.map(render)}
       {advanced.length > 0 && (
         <div>
-          <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs text-zinc-400 hover:text-white">
+          <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs text-muted hover:text-ink">
             {showAdvanced ? "▾" : "▸"} Advanced ({advanced.length})
           </button>
           {showAdvanced && <div className="mt-3 space-y-4">{advanced.map(render)}</div>}

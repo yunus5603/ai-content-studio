@@ -21,6 +21,8 @@ import {
 } from "@/lib/api";
 import { IMAGE_OPS, VIDEO_OPS, activeValues, defaultsFor, modelsFor, paramsFor, useCatalog } from "@/lib/catalog";
 import { usd } from "@/lib/format";
+import { SAMPLES } from "@/lib/samples";
+import { IconPlay, IconSparkles } from "@/components/icons";
 import { useWorkspace } from "@/lib/workspace";
 import { monthlyRoom, useBilling } from "@/lib/billing";
 
@@ -36,7 +38,7 @@ const statusBadge: Record<ModelSpec["status"], string | null> = { ga: null, prev
 
 function Thumb({ asset, onRemove }: { asset: Asset; onRemove: () => void }) {
   return (
-    <div className="group relative h-20 w-20 overflow-hidden rounded-lg border border-white/10">
+    <div className="group relative h-20 w-20 overflow-hidden rounded-lg border border-line">
       {asset.media_type === "video" ? (
         <video src={asset.url ?? undefined} className="h-full w-full object-cover" muted />
       ) : (
@@ -45,7 +47,7 @@ function Thumb({ asset, onRemove }: { asset: Asset; onRemove: () => void }) {
       )}
       <button
         onClick={onRemove}
-        className="absolute right-1 top-1 hidden h-5 w-5 rounded-full bg-black/80 text-xs group-hover:block"
+        className="absolute right-1 top-1 hidden h-5 w-5 rounded-full bg-ink/30 backdrop-blur-sm animate-fade-in text-xs group-hover:block"
         aria-label="Remove"
       >
         ✕
@@ -139,8 +141,8 @@ function CreateStudio() {
   useJobPolling(current?.id, jobs, onJobUpdate);
 
   if (!current) return null;
-  if (catalogError) return <p className="text-red-400">{catalogError}</p>;
-  if (!catalog) return <p className="text-zinc-500">Loading models…</p>;
+  if (catalogError) return <p className="text-danger">{catalogError}</p>;
+  if (!catalog) return <p className="text-subtle">Loading models…</p>;
 
   const canGenerate = can("generate");
   const room = billing ? monthlyRoom(billing) : null;
@@ -239,13 +241,17 @@ function CreateStudio() {
   return (
     <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_320px]">
       <section className="min-w-0">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">What will you create today?</h1>
+          <p className="mt-1 text-sm text-muted">Describe it, pick a model, and results land in your gallery automatically.</p>
+        </header>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-full border border-white/10 p-1">
+          <div className="flex rounded-full border border-line bg-surface p-1 shadow-soft">
             {(["image", "video"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => switchMedia(m)}
-                className={`rounded-full px-4 py-1.5 text-sm capitalize ${media === m ? "bg-white text-black" : "text-zinc-300"}`}
+                className={`rounded-full px-4 py-1.5 text-sm capitalize transition-all duration-200 ${media === m ? "bg-ink text-white shadow-soft" : "text-ink-2 hover:text-ink"}`}
               >
                 {m}
               </button>
@@ -256,7 +262,7 @@ function CreateStudio() {
               <button
                 key={o}
                 onClick={() => switchOp(o)}
-                className={`rounded-full px-3 py-1.5 text-sm ${op === o ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white"}`}
+                className={`rounded-full px-3 py-1.5 text-sm transition-colors duration-200 ${op === o ? "bg-brand-soft font-medium text-brand-ink" : "text-muted hover:bg-surface-2 hover:text-ink"}`}
               >
                 {catalog.operations[o]}
               </button>
@@ -265,7 +271,7 @@ function CreateStudio() {
         </div>
 
         {!canGenerate && (
-          <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+          <p className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
             You have view-only access to this workspace. Ask an admin for the member role to create.
           </p>
         )}
@@ -277,24 +283,24 @@ function CreateStudio() {
               if (spec.role === "mask") {
                 return (
                   <div key={spec.role}>
-                    <p className="mb-2 text-xs text-zinc-400">{spec.label}</p>
+                    <p className="mb-2 text-xs text-muted">{spec.label}</p>
                     <div className="flex items-center gap-3">
                       {list[0] && <Thumb asset={list[0]} onRemove={() => setInputs((c) => ({ ...c, mask: [] }))} />}
                       <button
                         disabled={!baseImage?.url}
                         onClick={() => setMasking(true)}
-                        className="rounded-lg border border-white/15 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40"
+                        className="rounded-lg border border-line-strong px-3 py-2 text-sm hover:bg-surface-2 disabled:opacity-40"
                       >
                         {list[0] ? "Repaint mask" : "Paint mask"}
                       </button>
-                      {!baseImage && <span className="text-xs text-zinc-500">Choose the image first</span>}
+                      {!baseImage && <span className="text-xs text-subtle">Choose the image first</span>}
                     </div>
                   </div>
                 );
               }
               return (
                 <div key={spec.role}>
-                  <p className="mb-2 text-xs text-zinc-400">
+                  <p className="mb-2 text-xs text-muted">
                     {spec.label}
                     {spec.max > 1 && ` (up to ${spec.max})`}
                   </p>
@@ -310,7 +316,7 @@ function CreateStudio() {
                       <button
                         disabled={!canGenerate}
                         onClick={() => setPicker(spec)}
-                        className="grid h-20 w-20 place-items-center rounded-lg border border-dashed border-white/20 text-2xl text-zinc-500 hover:bg-white/5 disabled:opacity-40"
+                        className="grid h-20 w-20 place-items-center rounded-lg border border-dashed border-line-strong text-2xl text-subtle hover:bg-surface-2 disabled:opacity-40"
                         aria-label={`Add ${spec.label}`}
                       >
                         +
@@ -323,29 +329,30 @@ function CreateStudio() {
           </div>
         )}
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <div className="card mt-5 p-4 transition-shadow duration-300 focus-within:border-brand/40 focus-within:shadow-card">
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={OP_HINTS[op]}
             rows={5}
             disabled={!canGenerate}
-            className="w-full resize-y bg-transparent outline-none placeholder:text-zinc-600"
+            className="w-full resize-y bg-transparent outline-none placeholder:text-subtle"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               onClick={enhance}
               disabled={!canGenerate || enhancing || !prompt.trim()}
-              className="rounded-lg border border-white/15 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40"
+              className="btn btn-secondary"
             >
-              {enhancing ? "Enhancing…" : "✦ Enhance prompt"}
+              <IconSparkles className={`h-4 w-4 text-brand ${enhancing ? "animate-spin" : ""}`} />
+              {enhancing ? "Enhancing…" : "Enhance prompt"}
             </button>
             <div className="ml-auto flex items-center gap-3">
               {estimate && (
-                <span className="text-right text-sm text-zinc-400" title="Provider price plus 10% platform fee">
+                <span className="text-right text-sm text-muted" title="Provider price plus 10% platform fee">
                   ≈ {usd(estimate.price_usd)}
                   {billing && (
-                    <span className={`block text-xs ${short ? "text-amber-300" : "text-zinc-500"}`}>
+                    <span className={`block text-xs ${short ? "text-warning" : "text-subtle"}`}>
                       {usd(billing.balance_usd)} left
                     </span>
                   )}
@@ -354,15 +361,15 @@ function CreateStudio() {
               <button
                 onClick={generate}
                 disabled={!canGenerate || submitting || !prompt.trim() || !estimate || missing.length > 0}
-                className="rounded-lg bg-white px-5 py-2 text-sm font-medium text-black disabled:opacity-40"
+                className="btn btn-brand"
               >
                 {submitting ? "Starting…" : "Generate"}
               </button>
             </div>
           </div>
-          {missing.length > 0 && <p className="mt-2 text-xs text-zinc-500">Add: {missing.map((m) => m.label).join(", ")}</p>}
+          {missing.length > 0 && <p className="mt-2 text-xs text-subtle">Add: {missing.map((m) => m.label).join(", ")}</p>}
           {short && !problem && (
-            <p className="mt-2 text-sm text-amber-300">
+            <p className="mt-2 text-sm text-warning">
               {short}{" "}
               <Link href="/studio/billing" className="underline underline-offset-2">
                 {short.startsWith("Not enough") ? "Buy credits" : "See billing"}
@@ -370,16 +377,23 @@ function CreateStudio() {
             </p>
           )}
           {problem && (
-            <p className="mt-2 text-sm text-red-400">
+            <p className="mt-2 text-sm text-danger">
               {problem.message}{" "}
               {problem.billing && (
-                <Link href="/studio/billing" className="text-white underline underline-offset-2">
+                <Link href="/studio/billing" className="text-ink underline underline-offset-2">
                   Go to billing
                 </Link>
               )}
             </p>
           )}
         </div>
+
+        {jobs.length === 0 && (
+          <Inspiration
+            media={media}
+            onPick={(p) => setPrompt(p)}
+          />
+        )}
 
         <div className="mt-8 space-y-3">
           {jobs.map((j) => (
@@ -388,14 +402,14 @@ function CreateStudio() {
         </div>
       </section>
 
-      <aside id="settings" className="space-y-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4 lg:sticky lg:top-6 lg:self-start">
+      <aside id="settings" className="card space-y-5 p-5 lg:sticky lg:top-8 lg:self-start">
         <div>
-          <label htmlFor="model-select" className="mb-1 block text-xs text-zinc-400">Model</label>
+          <label htmlFor="model-select" className="label">Model</label>
           <select
             id="model-select"
             value={modelId ?? ""}
             onChange={(e) => chooseModel(op, e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-sm"
+            className="input cursor-pointer"
           >
             {["openai", "vertex", "debug"].map((provider) => {
               const group = available.filter((m) => m.provider === provider);
@@ -414,12 +428,12 @@ function CreateStudio() {
             })}
           </select>
           {model && (
-            <div className="mt-2 text-xs text-zinc-500">
+            <div className="mt-2 text-xs text-subtle">
               <p>{model.description}</p>
-              {model.shutdown_date && <p className="mt-1 text-amber-300/80">Retires {model.shutdown_date}</p>}
+              {model.shutdown_date && <p className="mt-1 text-warning">Retires {model.shutdown_date}</p>}
               <div className="mt-2 flex flex-wrap gap-1">
                 {model.tags.map((t) => (
-                  <span key={t} className="rounded border border-white/10 px-1.5 py-0.5">{t.replace("-", " ")}</span>
+                  <span key={t} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">{t.replace("-", " ")}</span>
                 ))}
               </div>
             </div>
@@ -451,6 +465,39 @@ function CreateStudio() {
         />
       )}
       {masking && baseImage?.url && <MaskEditor imageUrl={baseImage.url} onDone={saveMask} onClose={() => setMasking(false)} />}
+    </div>
+  );
+}
+
+function Inspiration({ media, onPick }: { media: "image" | "video"; onPick: (prompt: string) => void }) {
+  const ideas = [...SAMPLES].sort((a, b) => Number(b.media === media) - Number(a.media === media)).slice(0, 4);
+  return (
+    <div className="mt-8">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold">Need an idea?</h2>
+        <span className="text-xs text-subtle">Click one to use its prompt</span>
+      </div>
+      <div className="stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {ideas.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => onPick(s.prompt)}
+            className="card card-hover group overflow-hidden p-1.5 text-left"
+          >
+            <div className="relative overflow-hidden rounded-[10px]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static showcase asset */}
+              <img src={s.src} alt="" className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" />
+              {s.media === "video" && (
+                <span className="absolute left-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-white/85 text-ink shadow-soft">
+                  <IconPlay className="h-3 w-3" />
+                </span>
+              )}
+            </div>
+            <p className="px-1 pb-0.5 pt-2 text-xs font-medium">{s.title}</p>
+            <p className="line-clamp-2 px-1 pb-1 text-[11px] leading-snug text-subtle">{s.prompt}</p>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

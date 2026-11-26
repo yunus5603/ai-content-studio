@@ -55,22 +55,22 @@ export function AssetPicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 p-5" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/30 backdrop-blur-sm animate-fade-in p-4" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-line bg-surface shadow-float animate-scale-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Choose {mediaType === "image" ? "an image" : "a video"}</h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white" aria-label="Close">✕</button>
+          <button onClick={onClose} className="text-muted hover:text-ink" aria-label="Close">✕</button>
         </div>
-        <label className={`mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-white/20 p-6 text-sm text-zinc-300 hover:bg-white/5 ${busy ? "opacity-50" : ""}`}>
+        <label className={`mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-line-strong p-6 text-sm text-ink-2 hover:bg-surface-2 ${busy ? "opacity-50" : ""}`}>
           {busy ? "Uploading…" : "Upload from your device"}
           <input type="file" accept={`${mediaType}/*`} className="hidden" disabled={busy} onChange={(e) => onFiles(e.target.files)} />
         </label>
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-        <p className="mt-5 text-xs uppercase tracking-wide text-zinc-500">Or pick from your gallery</p>
-        {items.length === 0 && <p className="mt-2 text-sm text-zinc-500">Nothing in the gallery yet.</p>}
+        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        <p className="mt-5 text-xs uppercase tracking-wide text-subtle">Or pick from your gallery</p>
+        {items.length === 0 && <p className="mt-2 text-sm text-subtle">Nothing in the gallery yet.</p>}
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
           {items.map((a) => (
-            <button key={a.id} onClick={() => onPick(a)} className="overflow-hidden rounded-lg border border-white/10 hover:border-violet-400">
+            <button key={a.id} onClick={() => onPick(a)} className="overflow-hidden rounded-lg border border-line hover:border-brand">
               {a.media_type === "video" ? (
                 <video src={a.url ?? undefined} className="aspect-square w-full object-cover" muted />
               ) : (
