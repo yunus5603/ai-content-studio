@@ -21,16 +21,24 @@ class CatalogError(ValueError):
 
 
 @lru_cache
-def load_catalog(include_debug: bool = False) -> dict[str, ModelSpec]:
+def load_catalog(
+    include_debug: bool = False, include_internal: bool = False
+) -> dict[str, ModelSpec]:
+    """Models users can pick. `include_internal` adds studio-side steps (e.g. stitching
+    storyboard clips) that features submit as jobs but the model picker never shows."""
     raw = yaml.safe_load(CATALOG_PATH.read_text())
     models = [ModelSpec.model_validate(m) for m in raw["models"]]
     if include_debug:
         models += [ModelSpec.model_validate(m) for m in raw.get("debug_models", [])]
+    if include_internal:
+        models += [ModelSpec.model_validate(m) for m in raw.get("internal_models", [])]
     return {m.id: m for m in models if m.enabled}
 
 
-def get_model(model_id: str, include_debug: bool = False) -> ModelSpec:
-    model = load_catalog(include_debug).get(model_id)
+def get_model(
+    model_id: str, include_debug: bool = False, include_internal: bool = False
+) -> ModelSpec:
+    model = load_catalog(include_debug, include_internal).get(model_id)
     if model is None:
         raise CatalogError(f"Unknown model: {model_id}")
     return model

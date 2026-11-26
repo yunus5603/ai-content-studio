@@ -93,7 +93,7 @@ async def public_share(
         if job:
             prompt = job.prompt
             try:
-                model_name = get_model(job.model, include_debug=True).name
+                model_name = get_model(job.model, include_debug=True, include_internal=True).name
             except CatalogError:
                 model_name = None
     return PublicShareOut(

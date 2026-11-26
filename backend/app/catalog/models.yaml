@@ -682,3 +682,29 @@ debug_models:
       rates: [{ usd: 0.01 }]
       source: test
       verified: true
+
+# Studio-side steps that features submit as jobs (never shown in the model picker).
+internal_models:
+  - id: studio/stitch
+    provider: studio
+    model: ffmpeg
+    adapter: stitch
+    name: Storyboard assembly
+    family: Studio
+    media_type: video
+    description: Joins storyboard clips into one video, in order, with cuts or crossfades.
+    operations:
+      - operation: assemble
+        inputs: [{ role: clip, label: Clips, media_type: video, min: 1, max: 60 }]
+    params:
+      - name: transition
+        label: Transition
+        type: enum
+        default: cut
+        options: [{ value: cut, label: Hard cut }, { value: fade, label: Crossfade }]
+      - { name: fade_seconds, label: Crossfade length, type: float, default: 0.5, min: 0.1, max: 2, when: { transition: [fade] } }
+    pricing:
+      unit: image
+      rates: [{ usd: 0 }]
+      source: Runs on our own worker; free to customers.
+      verified: true

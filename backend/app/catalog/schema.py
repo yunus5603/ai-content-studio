@@ -10,6 +10,7 @@ Operation = Literal[
     "inpaint",  # prompt + image + mask (painted area is regenerated)
     "text_to_video",  # prompt only
     "image_to_video",  # prompt + first frame (+ optional last frame)
+    "assemble",  # internal: join video clips into one sequence (storyboards)
 ]
 
 OPERATION_LABELS: dict[str, str] = {
@@ -18,6 +19,7 @@ OPERATION_LABELS: dict[str, str] = {
     "inpaint": "Inpaint (mask)",
     "text_to_video": "Text to video",
     "image_to_video": "Image to video",
+    "assemble": "Assemble clips",
 }
 
 
@@ -46,7 +48,7 @@ class ParamSpec(BaseModel):
 
 
 class InputSpec(BaseModel):
-    role: Literal["image", "mask", "first_frame", "last_frame"]
+    role: Literal["image", "mask", "first_frame", "last_frame", "clip"]
     label: str
     media_type: Literal["image", "video"] = "image"
     min: int = 0
@@ -88,7 +90,7 @@ class Pricing(BaseModel):
 
 class ModelSpec(BaseModel):
     id: str  # our stable id, e.g. "openai/gpt-image-2.6-sunburst"
-    provider: Literal["openai", "vertex", "debug"]
+    provider: Literal["openai", "vertex", "debug", "studio"]
     model: str  # provider's model id
     adapter: str  # key in app.providers registry
     name: str
