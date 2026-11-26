@@ -26,17 +26,17 @@ export default function InvitationsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-semibold">Invitations</h1>
-      {invites.length === 0 && <p className="mt-6 text-zinc-500">No pending invitations.</p>}
+      {invites.length === 0 && <p className="mt-6 text-subtle">No pending invitations.</p>}
       <ul className="mt-6 space-y-3">
         {invites.map((i) => (
-          <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-4">
+          <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line p-4">
             <span>
               <span className="font-medium">{i.workspace_name}</span>
-              <span className="text-zinc-400"> invited you as {i.role}</span>
+              <span className="text-muted"> invited you as {i.role}</span>
             </span>
             <span className="flex gap-2">
-              <button onClick={() => respond(i, true)} className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-black">Accept</button>
-              <button onClick={() => respond(i, false)} className="rounded-lg border border-white/15 px-3 py-1.5 text-sm">Decline</button>
+              <button onClick={() => respond(i, true)} className="btn btn-primary">Accept</button>
+              <button onClick={() => respond(i, false)} className="rounded-lg border border-line-strong px-3 py-1.5 text-sm">Decline</button>
             </span>
           </li>
         ))}

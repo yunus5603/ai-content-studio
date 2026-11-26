@@ -53,13 +53,13 @@ export default function GalleryPage() {
           <button
             key={f.label}
             onClick={() => setFilter(f.query)}
-            className={`rounded-full px-3 py-1 text-sm ${filter === f.query ? "bg-white text-black" : "border border-white/15 text-zinc-300"}`}
+            className={`rounded-full px-3 py-1 text-sm ${filter === f.query ? "bg-ink text-white shadow-soft" : "border border-line-strong text-ink-2"}`}
           >
             {f.label}
           </button>
         ))}
       </div>
-      {!loading && items.length === 0 && <p className="mt-10 text-zinc-500">Nothing here yet.</p>}
+      {!loading && items.length === 0 && <p className="mt-10 text-subtle">Nothing here yet.</p>}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((a) => (
           <MediaTile key={a.id} asset={a} onOpen={setOpen} />
@@ -77,7 +77,7 @@ export default function GalleryPage() {
         />
       )}
       {cursor && (
-        <button onClick={() => load(cursor)} className="mt-6 rounded-lg border border-white/15 px-4 py-2 text-sm">
+        <button onClick={() => load(cursor)} className="mt-6 rounded-lg border border-line-strong px-4 py-2 text-sm">
           Load more
         </button>
       )}

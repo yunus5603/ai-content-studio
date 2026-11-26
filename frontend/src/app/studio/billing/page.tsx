@@ -18,10 +18,10 @@ const kindLabel: Record<CreditEntry["kind"], string> = {
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <p className="text-xs uppercase tracking-wide text-subtle">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-      {sub && <div className="mt-1 text-xs text-zinc-500">{sub}</div>}
+      {sub && <div className="mt-1 text-xs text-subtle">{sub}</div>}
     </div>
   );
 }
@@ -29,20 +29,20 @@ function Card({ label, value, sub }: { label: string; value: string; sub?: React
 function Bars({ title, rows }: { title: string; rows: UsageRow[] }) {
   const max = Math.max(...rows.map((r) => r.spent_usd), 0.000001);
   return (
-    <div className="rounded-xl border border-white/10 p-4">
+    <div className="rounded-xl border border-line p-4">
       <h3 className="text-sm font-medium">{title}</h3>
-      {rows.length === 0 && <p className="mt-3 text-sm text-zinc-500">No usage yet.</p>}
+      {rows.length === 0 && <p className="mt-3 text-sm text-subtle">No usage yet.</p>}
       <ul className="mt-3 space-y-2.5">
         {rows.map((r) => (
           <li key={r.key} className="text-sm">
             <div className="flex justify-between gap-3">
-              <span className="truncate text-zinc-300">{r.label}</span>
-              <span className="shrink-0 tabular-nums text-zinc-400">
+              <span className="truncate text-ink-2">{r.label}</span>
+              <span className="shrink-0 tabular-nums text-muted">
                 {usd(r.spent_usd)} · {r.jobs} {r.jobs === 1 ? "job" : "jobs"}
               </span>
             </div>
-            <div className="mt-1 h-1.5 rounded-full bg-white/5">
-              <div className="h-1.5 rounded-full bg-violet-400" style={{ width: `${(r.spent_usd / max) * 100}%` }} />
+            <div className="mt-1 h-1.5 rounded-full bg-surface-2">
+              <div className="h-1.5 rounded-full bg-brand" style={{ width: `${(r.spent_usd / max) * 100}%` }} />
             </div>
           </li>
         ))}
@@ -61,19 +61,19 @@ function Daily({ rows, days }: { rows: UsageRow[]; days: number }) {
   });
   const max = Math.max(...series.map((s) => s.spent), 0.000001);
   return (
-    <div className="rounded-xl border border-white/10 p-4">
+    <div className="rounded-xl border border-line p-4">
       <h3 className="text-sm font-medium">Daily spend</h3>
       <div className="mt-4 flex h-28 items-end gap-[3px]">
         {series.map((s) => (
           <div
             key={s.key}
             title={`${s.key}: ${usd(s.spent)} (${s.jobs} jobs)`}
-            className="flex-1 rounded-t-sm bg-violet-400/80 hover:bg-violet-300"
+            className="flex-1 rounded-t-sm bg-brand/80 hover:bg-brand"
             style={{ height: `${Math.max((s.spent / max) * 100, s.spent > 0 ? 4 : 1)}%`, opacity: s.spent > 0 ? 1 : 0.2 }}
           />
         ))}
       </div>
-      <div className="mt-1 flex justify-between text-xs text-zinc-500">
+      <div className="mt-1 flex justify-between text-xs text-subtle">
         <span>{series[0]?.key}</span>
         <span>Today</span>
       </div>
@@ -158,7 +158,7 @@ function BillingPage() {
     }
   }
 
-  if (!current || !billing) return <p className="text-zinc-500">Loading…</p>;
+  if (!current || !billing) return <p className="text-subtle">Loading…</p>;
   const canBuy = owner && (billing.payments_enabled || billing.dev_topup_enabled);
   const wsLimit = billing.monthly_limit_usd;
   const myLimit = billing.my_monthly_limit_usd;
@@ -166,17 +166,17 @@ function BillingPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-2xl font-semibold">Billing</h1>
-      <p className="mt-1 text-sm text-zinc-400">
+      <p className="mt-1 text-sm text-muted">
         You pay the model provider&apos;s price plus a {Math.round(billing.platform_fee * 100)}% platform fee. Credits never expire.
       </p>
 
       {checkout === "success" && (
-        <p className="mt-4 rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+        <p className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">
           Payment received. Your credits will show up in a few seconds.
         </p>
       )}
       {checkout === "canceled" && (
-        <p className="mt-4 rounded-lg border border-white/10 p-3 text-sm text-zinc-400">Checkout canceled. You weren&apos;t charged.</p>
+        <p className="mt-4 rounded-lg border border-line p-3 text-sm text-muted">Checkout canceled. You weren&apos;t charged.</p>
       )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -194,11 +194,11 @@ function BillingPage() {
       </div>
 
       {owner && (
-        <section className="mt-8 rounded-xl border border-white/10 p-5" id="buy-credits">
+        <section className="mt-8 rounded-xl border border-line p-5" id="buy-credits">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-medium">Add credits</h2>
             {!billing.payments_enabled && billing.dev_topup_enabled && (
-              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-300">Test mode: no card needed</span>
+              <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">Test mode: no card needed</span>
             )}
           </div>
           {canBuy ? (
@@ -208,27 +208,27 @@ function BillingPage() {
                   key={amount}
                   onClick={() => buy(amount)}
                   disabled={busy !== null}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4 text-left hover:border-violet-400/60 hover:bg-violet-400/10 disabled:opacity-50"
+                  className="rounded-xl border border-line bg-surface px-4 py-4 text-left hover:border-brand/50 hover:bg-brand-soft disabled:opacity-50"
                 >
                   <span className="block text-xl font-semibold">${amount}</span>
-                  <span className="text-xs text-zinc-500">{busy === amount ? "Opening…" : "in credits"}</span>
+                  <span className="text-xs text-subtle">{busy === amount ? "Opening…" : "in credits"}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-zinc-400">Payments aren&apos;t set up on this server yet.</p>
+            <p className="mt-3 text-sm text-muted">Payments aren&apos;t set up on this server yet.</p>
           )}
-          <p className="mt-3 text-xs text-zinc-500">Secure card payment through Stripe. Receipts are emailed to you.</p>
+          <p className="mt-3 text-xs text-subtle">Secure card payment through Stripe. Receipts are emailed to you.</p>
 
-          <div className="mt-6 border-t border-white/10 pt-5">
+          <div className="mt-6 border-t border-line pt-5">
             <h3 className="text-sm font-medium">Monthly spending limit</h3>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-subtle">
               Generations stop when the workspace has spent this much in a calendar month. Leave empty for no limit.
               {!current.is_personal && <> Set limits for individual people on the <Link href="/studio/team" className="underline">Team</Link> page.</>}
             </p>
             <div className="mt-3 flex max-w-sm gap-2">
-              <div className="flex flex-1 items-center rounded-lg border border-white/10 bg-black/30 px-3">
-                <span className="text-zinc-500">$</span>
+              <div className="flex flex-1 items-center rounded-lg border border-line bg-surface px-3">
+                <span className="text-subtle">$</span>
                 <input
                   id="workspace-limit"
                   inputMode="decimal"
@@ -238,29 +238,29 @@ function BillingPage() {
                   className="w-full bg-transparent px-2 py-2 outline-none"
                 />
               </div>
-              <button onClick={saveLimit} className="rounded-lg border border-white/15 px-4 text-sm hover:bg-white/5">Save</button>
+              <button onClick={saveLimit} className="rounded-lg border border-line-strong px-4 text-sm hover:bg-surface-2">Save</button>
             </div>
           </div>
         </section>
       )}
       {!owner && (
-        <p className="mt-6 rounded-lg border border-white/10 p-4 text-sm text-zinc-400">
+        <p className="mt-6 rounded-lg border border-line p-4 text-sm text-muted">
           The workspace owner manages credits and limits. Below is your own usage.
         </p>
       )}
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       <section className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-medium">
-            Usage {usage && <span className="text-zinc-500">· {usd(usage.total_usd)} across {usage.jobs} {usage.jobs === 1 ? "job" : "jobs"}</span>}
+            Usage {usage && <span className="text-subtle">· {usd(usage.total_usd)} across {usage.jobs} {usage.jobs === 1 ? "job" : "jobs"}</span>}
           </h2>
           <div className="flex gap-1 text-sm">
             {[7, 30, 90].map((d) => (
               <button
                 key={d}
                 onClick={() => setDays(d)}
-                className={`rounded-full px-3 py-1 ${days === d ? "bg-white text-black" : "border border-white/15 text-zinc-300"}`}
+                className={`rounded-full px-3 py-1 ${days === d ? "bg-ink text-white shadow-soft" : "border border-line-strong text-ink-2"}`}
               >
                 {d} days
               </button>
@@ -280,40 +280,40 @@ function BillingPage() {
 
       <section className="mt-10">
         <h2 className="font-medium">Activity</h2>
-        <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-zinc-500">
-              <tr className="border-b border-white/10">
+            <thead className="text-left text-xs uppercase tracking-wide text-subtle">
+              <tr className="border-b border-line">
                 <th className="px-4 py-2 font-normal">When</th>
                 <th className="px-4 py-2 font-normal">What</th>
                 <th className="px-4 py-2 text-right font-normal">Amount</th>
                 <th className="px-4 py-2 text-right font-normal">Balance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-line">
               {entries.map((e) => (
                 <tr key={e.id}>
-                  <td className="whitespace-nowrap px-4 py-2 text-zinc-400">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-muted">{new Date(e.created_at).toLocaleString()}</td>
                   <td className="px-4 py-2">
                     {e.description ?? kindLabel[e.kind]}
                   </td>
-                  <td className={`whitespace-nowrap px-4 py-2 text-right tabular-nums ${e.amount_micros >= 0 ? "text-emerald-300" : ""}`}>
+                  <td className={`whitespace-nowrap px-4 py-2 text-right tabular-nums ${e.amount_micros >= 0 ? "text-success" : ""}`}>
                     {e.amount_micros >= 0 ? "+" : "−"}
                     {usd(Math.abs(e.amount_micros) / 1e6)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums text-zinc-400">{usd(e.balance_after_micros / 1e6)}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums text-muted">{usd(e.balance_after_micros / 1e6)}</td>
                 </tr>
               ))}
               {entries.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-zinc-500">No activity yet.</td>
+                  <td colSpan={4} className="px-4 py-6 text-center text-subtle">No activity yet.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
         {cursor && (
-          <button onClick={more} className="mt-4 rounded-lg border border-white/15 px-4 py-2 text-sm">Load more</button>
+          <button onClick={more} className="mt-4 rounded-lg border border-line-strong px-4 py-2 text-sm">Load more</button>
         )}
       </section>
     </div>

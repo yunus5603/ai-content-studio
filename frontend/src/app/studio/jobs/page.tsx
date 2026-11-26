@@ -39,14 +39,14 @@ export default function JobsPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-semibold">Jobs</h1>
-      {jobs.length === 0 && <p className="mt-10 text-zinc-500">No generations yet.</p>}
+      {jobs.length === 0 && <p className="mt-10 text-subtle">No generations yet.</p>}
       <div className="mt-6 space-y-3">
         {jobs.map((j) => (
           <JobCard key={j.id} job={j} models={models} onCancel={cancel} />
         ))}
       </div>
       {cursor && (
-        <button onClick={() => load(cursor)} className="mt-6 rounded-lg border border-white/15 px-4 py-2 text-sm">
+        <button onClick={() => load(cursor)} className="mt-6 rounded-lg border border-line-strong px-4 py-2 text-sm">
           Load more
         </button>
       )}
