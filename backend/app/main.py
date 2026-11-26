@@ -14,6 +14,7 @@ from app.api.routes import (
     me,
     prompts,
     shares,
+    storyboards,
     workspaces,
 )
 from app.core.config import get_settings

@@ -111,7 +111,13 @@ function Shell({ children }: { children: React.ReactNode }) {
         <BalanceChip />
         <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0">
           {nav.map((n) => (
-            <NavLink key={n.href} {...n} active={pathname === n.href} />
+            <Link
+              key={n.href}
+              href={n.href}
+              className={`rounded-lg px-3 py-2 text-sm ${pathname === n.href || (n.href !== "/studio" && pathname.startsWith(n.href)) ? "bg-white/10 text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
+            >
+              {n.label}
+            </Link>
           ))}
           {me.user.is_platform_admin && (
             <NavLink href="/studio/admin" label="Admin" icon={IconShield} active={pathname === "/studio/admin"} />
