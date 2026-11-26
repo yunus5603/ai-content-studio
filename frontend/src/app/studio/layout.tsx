@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { IconActivity, IconCard, IconGrid, IconLogout, IconMail, IconShield, IconSparkles, IconUsers, IconWand } from "@/components/icons";
+import { IconActivity, IconCard, IconGrid, IconLogout, IconMail, IconShield, IconSparkles, IconUsers, IconVideo, IconWand } from "@/components/icons";
 import { Logo } from "@/components/logo";
 import { useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -14,6 +14,7 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 const nav = [
   { href: "/studio", label: "Create", icon: IconSparkles },
   { href: "/studio/copilot", label: "Copilot", icon: IconWand },
+  { href: "/studio/storyboards", label: "Storyboards", icon: IconVideo },
   { href: "/studio/gallery", label: "Gallery", icon: IconGrid },
   { href: "/studio/jobs", label: "Jobs", icon: IconActivity },
   { href: "/studio/team", label: "Team", icon: IconUsers },
@@ -111,13 +112,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <BalanceChip />
         <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0">
           {nav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`rounded-lg px-3 py-2 text-sm ${pathname === n.href || (n.href !== "/studio" && pathname.startsWith(n.href)) ? "bg-white/10 text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
-            >
-              {n.label}
-            </Link>
+            <NavLink key={n.href} {...n} active={pathname === n.href || (n.href !== "/studio" && pathname.startsWith(`${n.href}/`))} />
           ))}
           {me.user.is_platform_admin && (
             <NavLink href="/studio/admin" label="Admin" icon={IconShield} active={pathname === "/studio/admin"} />

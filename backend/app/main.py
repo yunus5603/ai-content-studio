@@ -38,7 +38,19 @@ def create_app() -> FastAPI:
     async def healthz():
         return {"ok": True}
 
-    for module in (me, workspaces, assets, jobs, catalog, prompts, shares, billing, admin, copilot):
+    for module in (
+        me,
+        workspaces,
+        assets,
+        jobs,
+        catalog,
+        prompts,
+        shares,
+        billing,
+        admin,
+        copilot,
+        storyboards,
+    ):
         app.include_router(module.router, prefix="/v1")
     if settings.storage_backend == "local":
         app.include_router(files.router)
