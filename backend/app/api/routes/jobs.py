@@ -2,13 +2,12 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import workspace_access
 from app.api.routes.assets import asset_out
-from app.catalog import CatalogError, get_model, validate_params
-from app.catalog.pricing import estimate_cost, with_fee
+from app.catalog.pricing import with_fee
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
 from app.core.permissions import Action
@@ -17,12 +16,12 @@ from app.models.billing import to_usd
 from app.models.job import TERMINAL
 from app.schemas import JobCreate, JobOut, Page
 from app.services import billing
+from app.services.copilot import executor as copilot
+from app.services.jobs import InputRef, JobError, submit_job
 from app.services.storage import Storage, get_storage
 from app.services.workspaces import WorkspaceAccess
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/jobs", tags=["jobs"])
-
-MAX_ACTIVE_JOBS_PER_WORKSPACE = 20
 
 
 async def _job_out(session: AsyncSession, job: Job, storage: Storage) -> JobOut:
@@ -48,84 +47,18 @@ async def create_job(
 ):
     access.require(Action.generate)
     try:
-        spec = get_model(body.model, include_debug=settings.enable_debug_operations)
-        params = validate_params(spec, body.operation, body.params)
-    except CatalogError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
-    op_spec = spec.operation(body.operation)
-
-    # Inputs: right roles, right counts, assets from this workspace, right media type.
-    asset_ids = {i.asset_id for i in body.inputs}
-    assets = (
-        {
-            a.id: a
-            for a in await session.scalars(
-                select(Asset).where(
-                    Asset.id.in_(asset_ids), Asset.workspace_id == access.workspace.id
-                )
-            )
-        }
-        if asset_ids
-        else {}
-    )
-    if len(assets) != len(asset_ids):
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "One or more input files were not found in this workspace",
+        job = await submit_job(
+            session,
+            access.workspace,
+            access.user.id,
+            model=body.model,
+            operation=body.operation,
+            prompt=body.prompt,
+            params=body.params,
+            inputs=[InputRef(i.asset_id, i.role) for i in body.inputs],
+            include_debug=settings.enable_debug_operations,
         )
-    allowed = {i.role: i for i in op_spec.inputs}
-    for item in body.inputs:
-        rule = allowed.get(item.role)
-        if rule is None:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-                f"{spec.name} doesn't take a {item.role} input for this mode",
-            )
-        if assets[item.asset_id].media_type.value != rule.media_type:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, f"{rule.label} must be an {rule.media_type}"
-            )
-    for role, rule in allowed.items():
-        count = sum(1 for i in body.inputs if i.role == role)
-        if not rule.min <= count <= rule.max:
-            limit = f"exactly {rule.min}" if rule.min == rule.max else f"{rule.min} to {rule.max}"
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, f"{rule.label}: provide {limit}"
-            )
-
-    active = await session.scalar(
-        select(func.count())
-        .select_from(Job)
-        .where(
-            Job.workspace_id == access.workspace.id,
-            Job.status.in_([JobStatus.queued, JobStatus.running]),
-        )
-    )
-    if active >= MAX_ACTIVE_JOBS_PER_WORKSPACE:
-        raise HTTPException(
-            status.HTTP_429_TOO_MANY_REQUESTS,
-            "Too many generations in progress. Wait for some to finish.",
-        )
-
-    job = Job(
-        id=uuid.uuid4(),
-        workspace_id=access.workspace.id,
-        created_by_id=access.user.id,
-        operation=body.operation,
-        provider=spec.provider,
-        model=spec.id,
-        prompt=body.prompt,
-        params=params,
-        inputs=[{"asset_id": str(i.asset_id), "role": i.role} for i in body.inputs],
-        estimated_cost_usd=estimate_cost(spec, params),
-    )
-    session.add(job)
-    await session.flush()
-    try:
-        await billing.reserve(
-            session, access.workspace, access.user.id, job, with_fee(job.estimated_cost_usd)
-        )
-    except billing.BillingError as exc:
+    except JobError as exc:
         await session.rollback()
         raise HTTPException(exc.status_code, str(exc)) from exc
     await session.commit()
@@ -177,6 +110,7 @@ async def cancel_job(
     access: WorkspaceAccess = Depends(workspace_access),
     session: AsyncSession = Depends(get_session),
     storage: Storage = Depends(get_storage),
+    settings: Settings = Depends(get_settings),
 ):
     job = await _get_job(session, access, job_id)
     if job.created_by_id != access.user.id:
@@ -192,4 +126,7 @@ async def cancel_job(
         # so a running job is charged its estimate.
         await billing.settle(session, job, job.hold_micros if was_running else 0)
         await session.commit()
+        if job.plan_id and (plan := await copilot.lock_plan(session, job.plan_id)):
+            await copilot.advance(session, plan, settings)
+            await session.commit()
     return await _job_out(session, job, storage)

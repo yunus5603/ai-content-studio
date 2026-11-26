@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     vertex_video_location: str = "us-central1"
     # Model used to rewrite prompts ("Enhance prompt").
     prompt_enhancer_model: str = "gemini-3.5-flash-lite"
+    # Copilot planner: "llm" asks Gemini to plan, "rules" uses built-in heuristics,
+    # "auto" uses the LLM when a GCP project is configured.
+    copilot_planner: str = "auto"
+    copilot_model: str = "gemini-3.5-flash"
+    # Plans at or under this price may run without asking ("autopilot"), in USD.
+    copilot_autorun_max_usd: float = 0.50
+    # Dev only (needs ENABLE_DEBUG_OPERATIONS): run plan steps on the free debug models.
+    copilot_simulate: bool = False
 
     # Billing. Free credit (USD) for each new account's personal workspace.
     signup_credit_usd: float = 1.00

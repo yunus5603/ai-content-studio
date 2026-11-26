@@ -22,6 +22,7 @@ from app.models import Asset, AssetKind, Job, JobStatus
 from app.models.billing import to_micros
 from app.providers import ProviderError, get_adapter
 from app.services import billing
+from app.services.copilot import executor as copilot
 from app.services.media import EXTENSIONS
 from app.services.storage import Storage
 
@@ -154,7 +155,9 @@ async def requeue_stale(sessions: async_sessionmaker[AsyncSession], settings: Se
             .values(status=JobStatus.queued)
         )
         await s.commit()
-        return len(dead) + requeued.rowcount
+    for job in dead:
+        await copilot.on_job_finished(sessions, job.id, settings)
+    return len(dead) + requeued.rowcount
 
 
 async def run_job(
@@ -193,6 +196,7 @@ async def run_job(
                 current.finished_at = _now()
                 await billing.settle(s, current, 0)  # failed jobs are free
             await s.commit()
+        await copilot.on_job_finished(sessions, job.id, settings)
         return
     finally:
         beat.cancel()
@@ -231,6 +235,7 @@ async def run_job(
         await billing.settle(s, current, to_micros(with_fee(current.cost_usd)))
         current.finished_at = _now()
         await s.commit()
+    await copilot.on_job_finished(sessions, job.id, settings)
     log.info("job %s succeeded with %d output(s)", job.id, len(outputs))
 
 

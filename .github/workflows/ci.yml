@@ -25,6 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      # The debug video model renders its test clip with ffmpeg.
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - run: uv sync --frozen
       - run: uv run ruff check app tests
       - run: uv run ruff format --check app tests
