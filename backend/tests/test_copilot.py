@@ -183,6 +183,13 @@ async def test_autorun_and_revise(alice, bob, rules_planner, monkeypatch):
         )
     ).json()
     assert revised["preference"] == "budget"
+    shorter = (
+        await alice.post(
+            f"/v1/workspaces/{ws}/copilot/plans/{plan['id']}/revise",
+            json={"instruction": "make it 4 seconds"},
+        )
+    ).json()
+    assert shorter["steps"][-1]["params"]["duration_seconds"] == 4
     assert revised["estimated_price_usd"] < plan["estimated_price_usd"]
 
     assert (await bob.get(f"/v1/workspaces/{ws}/copilot/plans/{plan['id']}")).status_code == 404

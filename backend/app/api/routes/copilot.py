@@ -298,8 +298,6 @@ async def revise_plan(
         )
     except PlanningError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
-    if body.instruction:
-        plan.goal = f"{plan.goal}\n\nChange: {body.instruction}"[:4000]
     _apply(plan, draft)
     await session.commit()
     return await _plan_out(session, plan, storage, settings)

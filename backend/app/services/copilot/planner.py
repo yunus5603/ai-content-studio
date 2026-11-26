@@ -120,9 +120,10 @@ def tune_params(
         elif p.name == "generate_audio" and preference == "budget":
             wanted[p.name] = False
         elif p.name == "duration_seconds" and values:
-            asked = re.search(r"\b(\d{1,2})\s*-?\s*(s|sec|secs|seconds?)\b", goal, re.I)
+            # The last mention wins, so "8-second ... make it 6 seconds" means 6.
+            asked = re.findall(r"\b(\d{1,2})\s*-?\s*(?:s|sec|secs|seconds?)\b", goal, re.I)
             if asked:
-                wanted[p.name] = min(values, key=lambda v: abs(float(v) - int(asked[1])))
+                wanted[p.name] = min(values, key=lambda v: abs(float(v) - int(asked[-1])))
             elif preference == "budget":
                 wanted[p.name] = min(values)
         elif p.name in ("aspect_ratio", "size") and orientation:
@@ -173,10 +174,14 @@ def _title(goal: str) -> str:
     return (words[:60] + "…") if len(words) > 60 else words
 
 
-def rules_plan(goal: str, preference: Preference, attachments: dict[uuid.UUID, str]) -> Draft:
+def rules_plan(
+    goal: str, preference: Preference, attachments: dict[uuid.UUID, str], change: str = ""
+) -> Draft:
+    """Heuristic plan. `change` (a revision request) steers settings but isn't put in prompts."""
     images = [a for a, kind in attachments.items() if kind == "image"]
-    wants_video = bool(VIDEO_WORDS.search(goal))
-    count = _count(goal)
+    text = f"{goal}. {change}" if change else goal
+    wants_video = bool(VIDEO_WORDS.search(text))
+    count = _count(change) if _count(change) > 1 else _count(goal)
     steps: list[PlanStep] = []
     notes: list[str] = []
 
@@ -189,7 +194,7 @@ def rules_plan(goal: str, preference: Preference, attachments: dict[uuid.UUID, s
                 model=spec.id,
                 operation=operation,
                 prompt=prompt,
-                params=tune_params(spec, operation, preference, goal, n),
+                params=tune_params(spec, operation, preference, text, n),
                 inputs=inputs or [],
                 why=why,
             )
@@ -402,8 +407,7 @@ async def make_plan(
         except Exception:
             log.exception("LLM planner failed; using rules")
     if draft is None:
-        text = f"{goal}. {instruction}" if instruction else goal
-        draft = rules_plan(text, preference, attachments)
+        draft = rules_plan(goal, preference, attachments, instruction or "")
     return finalize(draft, preference, budget_usd, attachments)
 
 
