@@ -24,3 +24,11 @@ The first version is built in four steps. Each lands as its own pull request.
    An assistant that turns a rough idea into a plan: improves the prompt, picks
    models and settings, chains steps (image, then animate), shows the estimated
    cost and asks before spending.
+
+**Storyboards** (added alongside step 4)
+   Plan a sequence shot by shot: what each frame shows, what happens in it, length,
+   and reference images for consistent characters or products. Each shot gets a
+   keyframe image, then is animated from that keyframe (optionally ending on the next
+   shot's keyframe), and the clips are joined into one film with cuts or crossfades.
+   Every step is an ordinary job, priced up front and billed like anything else;
+   assembling the film is free.

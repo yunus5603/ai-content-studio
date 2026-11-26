@@ -76,14 +76,31 @@ async def run_clip(ctx) -> list[GeneratedMedia]:
         raise ProviderError("The debug video model needs ffmpeg installed")
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "clip.mp4"
+        first = ctx.inputs("first_frame")
+        if first:
+            # Slow zoom into the first frame, so storyboard demos look like the real thing.
+            still = Path(tmp) / "first"
+            still.write_bytes(first[0][1])
+            frames = seconds * 24
+            source = [
+                "-loop",
+                "1",
+                "-i",
+                str(still),
+                "-filter_complex",
+                "scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,"
+                f"zoompan=z='1+0.15*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+                f":d={frames}:s=1280x720:fps=24",
+                "-frames:v",
+                str(frames),
+            ]
+        else:
+            source = ["-f", "lavfi", "-i", f"testsrc2=size=1280x720:rate=24:duration={seconds}"]
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg",
             "-loglevel",
             "error",
-            "-f",
-            "lavfi",
-            "-i",
-            f"testsrc2=size=1280x720:rate=24:duration={seconds}",
+            *source,
             "-pix_fmt",
             "yuv420p",
             "-movflags",

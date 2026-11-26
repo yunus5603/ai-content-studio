@@ -89,7 +89,7 @@ export type InputSpec = { role: InputRole; label: string; media_type: "image" | 
 
 export type ModelSpec = {
   id: string;
-  provider: "openai" | "vertex" | "debug";
+  provider: "openai" | "vertex" | "debug" | "studio";
   model: string;
   name: string;
   family: string;

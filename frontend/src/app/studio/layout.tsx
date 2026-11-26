@@ -12,6 +12,7 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 
 const nav = [
   { href: "/studio", label: "Create" },
+  { href: "/studio/storyboards", label: "Storyboards" },
   { href: "/studio/gallery", label: "Gallery" },
   { href: "/studio/jobs", label: "Jobs" },
   { href: "/studio/team", label: "Team" },
@@ -92,7 +93,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <Link
               key={n.href}
               href={n.href}
-              className={`rounded-lg px-3 py-2 text-sm ${pathname === n.href ? "bg-white/10 text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
+              className={`rounded-lg px-3 py-2 text-sm ${pathname === n.href || (n.href !== "/studio" && pathname.startsWith(n.href)) ? "bg-white/10 text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
             >
               {n.label}
             </Link>
