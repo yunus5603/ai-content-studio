@@ -1,0 +1,170 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}
+body{margin:0;width:2060px;height:1180px;background:#f8f7f4;font-family:Inter,"Helvetica Neue",Arial,sans-serif;color:#16151a;position:relative;overflow:hidden}
+.title{position:absolute;left:44px;top:30px}
+.title h1{margin:0;font-size:30px;letter-spacing:-.02em}
+.title p{margin:6px 0 0;color:#5d5c66;font-size:15px}
+.zone{position:absolute;border-radius:22px;border:1.5px dashed #d6d3cb}
+.zone>.zl{position:absolute;top:-11px;left:18px;background:#f8f7f4;padding:0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8b8a93}
+.gcp{background:linear-gradient(180deg,#f3f6ff 0%,#f6f4ff 100%);border:1.5px solid #dcdcf5}
+.gcp>.zl{background:linear-gradient(180deg,#f3f6ff,#f3f6ff);color:#5b4cf0}
+.card{position:absolute;background:#fff;border:1px solid #e7e5df;border-radius:16px;box-shadow:0 1px 2px rgba(22,21,26,.05),0 10px 24px -12px rgba(22,21,26,.18);padding:14px 16px}
+.hd{display:flex;align-items:center;gap:10px}
+.ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;color:#fff;font-size:17px;font-weight:700}
+.nm{font-weight:700;font-size:15.5px;line-height:1.15}
+.sub{font-size:12px;color:#8b8a93;margin-top:2px}
+ul{list-style:none;margin:11px 0 0;padding:0;display:grid;gap:5px}
+li{font-size:12.5px;color:#3b3a42;background:#f6f5f2;border-radius:8px;padding:5px 9px;display:flex;justify-content:space-between;gap:8px}
+li b{font-weight:600;color:#16151a}
+li span{color:#8b8a93;font-size:11.5px;white-space:nowrap}
+.two{grid-template-columns:1fr 1fr}
+svg#wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,-100%);margin-top:-5px;text-align:center;line-height:1.25;background:#fff;border:1px solid #e7e5df;border-radius:99px;padding:2px 8px;font-size:11px;color:#5d5c66;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.num{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#5b4cf0;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 3px #fff}
+.legend{position:absolute;left:44px;right:44px;bottom:28px;display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.step{background:#fff;border:1px solid #e7e5df;border-radius:14px;padding:10px 12px;font-size:12px;color:#3b3a42;line-height:1.35}
+.step .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#5b4cf0;color:#fff;font-size:11px;font-weight:700;margin-bottom:5px}
+.step b{display:block;font-size:12.5px;color:#16151a;margin-bottom:2px}
+.lg{position:absolute;right:44px;top:40px;display:flex;gap:18px;font-size:12px;color:#5d5c66;align-items:center}
+.lg i{display:inline-block;width:26px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+</style></head><body>
+<style>.lbl{white-space:nowrap}.lbl.lo{transform:translate(-50%,0);margin-top:6px}
+li .n2{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#5b4cf0;color:#fff;font-size:10px;font-weight:700;margin-right:6px;vertical-align:1px}</style><div class="title"><h1>AI Content Studio · System architecture</h1><p>Three Cloud Run services share one Postgres database, which doubles as the job queue. Only the worker calls the image and video models.</p></div>
+<div class="lg"><span><i style="border-color:#5b4cf0"></i>Generation path</span><span><i style="border-color:#9a98a3"></i>Request / data</span><span><i style="border-color:#f0508c;border-top-style:dashed"></i>Billing</span></div>
+
+<div class="zone" style="left:24px;top:124px;width:262px;height:870px"><span class="zl">Clients</span></div>
+<div class="zone gcp" style="left:330px;top:124px;width:1380px;height:870px"><span class="zl">Google Cloud · Cloud Run + managed services</span></div>
+<div class="zone" style="left:1752px;top:124px;width:286px;height:870px"><span class="zl">External APIs</span></div>
+
+<div class="card" id="browser" style="left:40px;top:160px;width:230px">
+  <div class="hd"><div class="ic" style="background:#16151a">◱</div><div><div class="nm">Browser</div><div class="sub">desktop and mobile</div></div></div>
+  <ul><li><b>Landing</b></li><li><b>Create</b><span>image · video</span></li><li><b>Copilot</b></li><li><b>Storyboards</b></li><li><b>Gallery · Jobs</b></li><li><b>Team · Billing</b></li><li><b>Admin</b><span>staff only</span></li></ul>
+</div>
+<div class="card" id="viewer" style="left:40px;top:640px;width:230px">
+  <div class="hd"><div class="ic" style="background:#8b8a93">↗</div><div><div class="nm">Public viewer</div><div class="sub">no account needed</div></div></div>
+  <ul><li><b>Share link</b><span>/s/[token]</span></li></ul>
+</div>
+
+<div class="card" id="web" style="left:360px;top:160px;width:240px">
+  <div class="hd"><div class="ic" style="background:#16151a">N</div><div><div class="nm">studio-web</div><div class="sub">Next.js 16 · React 19</div></div></div>
+  <ul><li><b>App router UI</b><span>Tailwind v4</span></li><li><b>Job polling</b><span>live progress</span></li></ul>
+</div>
+<div class="card" id="idp" style="left:360px;top:450px;width:240px">
+  <div class="hd"><div class="ic" style="background:#ea4335">G</div><div><div class="nm">Identity Platform</div><div class="sub">Firebase Auth</div></div></div>
+  <ul><li><b>Google · email</b><span>ID tokens</span></li></ul>
+</div>
+<div class="card" id="platform" style="left:360px;top:780px;width:240px">
+  <div class="hd"><div class="ic" style="background:#8b8a93">⚿</div><div><div class="nm">Platform</div><div class="sub">infra/deploy.sh</div></div></div>
+  <ul><li><b>Secret Manager</b><span>keys</span></li><li><b>Service account</b><span>Vertex · GCS</span></li></ul>
+</div>
+
+<div class="card" id="api" style="left:690px;top:160px;width:300px">
+  <div class="hd"><div class="ic" style="background:#009688">⚡</div><div><div class="nm">studio-api</div><div class="sub">FastAPI · SQLAlchemy async · public</div></div></div>
+  <ul>
+    <li><b>Auth + workspaces</b><span>roles · invites</span></li>
+    <li><b>Catalog</b><span>models.yaml</span></li>
+    <li><b><span class="n2">2</span>Jobs</b><span>price · hold</span></li>
+    <li><b>Assets + uploads</b><span>shares</span></li>
+    <li><b>Prompt enhance</b><span>Gemini</span></li>
+    <li><b>Copilot</b><span>plan → approve</span></li>
+    <li><b>Storyboards</b><span>shots · film</span></li>
+    <li><b>Billing</b><span>ledger · limits</span></li>
+    <li><b>Admin</b><span>revenue · margin</span></li>
+  </ul>
+</div>
+
+<div class="card" id="sql" style="left:1080px;top:160px;width:240px">
+  <div class="hd"><div class="ic" style="background:#4169e1">⛁</div><div><div class="nm">Cloud SQL</div><div class="sub">Postgres 16 · Alembic</div></div></div>
+  <ul>
+    <li><b>jobs</b><span>the queue</span></li>
+    <li><b>users · workspaces</b></li>
+    <li><b>assets · shares</b></li>
+    <li><b>credit_entries</b><span>µUSD ledger</span></li>
+    <li><b>copilot_plans</b></li>
+    <li><b>storyboards · shots</b></li>
+  </ul>
+</div>
+<div class="card" id="gcs" style="left:1080px;top:600px;width:240px">
+  <div class="hd"><div class="ic" style="background:#f59e42">▤</div><div><div class="nm">Cloud Storage</div><div class="sub">private bucket</div></div></div>
+  <ul><li><b>uploads/</b><span>refs · masks</span></li><li><b>outputs/</b><span>images · clips</span></li><li><b>signed URLs</b><span>short-lived</span></li></ul>
+</div>
+
+<div class="card" id="worker" style="left:1410px;top:160px;width:270px">
+  <div class="hd"><div class="ic" style="background:#5b4cf0">⚙</div><div><div class="nm">studio-worker</div><div class="sub">always-on · internal · scales out</div></div></div>
+  <ul>
+    <li><b>Claim next job</b><span>SKIP LOCKED</span></li>
+    <li><b>Heartbeat</b><span>retry on crash</span></li>
+    <li><b>OpenAI adapter</b><span>images</span></li>
+    <li><b>Gemini adapter</b><span>images</span></li>
+    <li><b>Veo adapter</b><span>video · audio</span></li>
+    <li><b>Save outputs</b><span>gallery asset</span></li>
+    <li><b><span class="n2">7</span>Settle credits</b><span>actual usage</span></li>
+    <li><b>Film assembly</b><span>ffmpeg</span></li>
+  </ul>
+</div>
+
+<div class="card" id="openai" style="left:1770px;top:160px;width:250px">
+  <div class="hd"><div class="ic" style="background:#16151a">◎</div><div><div class="nm">OpenAI Images</div><div class="sub">token-priced</div></div></div>
+  <ul><li><b>GPT Image 2.6</b></li><li><b>GPT Image 2.5 · 2</b></li></ul>
+</div>
+<div class="card" id="vertex" style="left:1770px;top:400px;width:250px">
+  <div class="hd"><div class="ic" style="background:#4285f4">✦</div><div><div class="nm">Vertex AI</div><div class="sub">Google models</div></div></div>
+  <ul><li><b>Nano Banana 2.1</b></li><li><b>Gemini 3 Pro Image</b></li><li><b>Veo 3.1</b><span>Fast · Lite</span></li><li><b>Gemini text</b><span>enhance · plan</span></li></ul>
+</div>
+<div class="card" id="stripe" style="left:1770px;top:740px;width:250px">
+  <div class="hd"><div class="ic" style="background:#635bff">S</div><div><div class="nm">Stripe</div><div class="sub">Checkout + webhooks</div></div></div>
+  <ul><li><b>Credit packs</b><span>$5 – $100</span></li></ul>
+</div>
+
+<svg id="wires"><defs>
+<marker id="a-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9a98a3"/></marker>
+<marker id="a-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5b4cf0"/></marker>
+<marker id="a-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f0508c"/></marker>
+</defs></svg>
+
+<div class="legend">
+ <div class="step"><span class="n">1</span><b>Submit</b>Browser sends prompt, model and settings with its ID token.</div>
+ <div class="step"><span class="n">2</span><b>Price + hold</b>API checks role and limits, prices it at cost + 10% and holds credits.</div>
+ <div class="step"><span class="n">3</span><b>Enqueue</b>The job is a row in <i>jobs</i>. No separate queue service.</div>
+ <div class="step"><span class="n">4</span><b>Claim</b>A worker locks the next row with SKIP LOCKED and sends heartbeats.</div>
+ <div class="step"><span class="n">5</span><b>Generate</b>The adapter calls OpenAI or Vertex AI and reports progress.</div>
+ <div class="step"><span class="n">6</span><b>Save</b>Outputs land in Cloud Storage and appear in the gallery.</div>
+ <div class="step"><span class="n">7</span><b>Settle</b>The hold becomes the actual price. Failures are refunded.</div>
+</div>
+<script>
+const W=document.getElementById('wires');
+function box(id){const r=document.getElementById(id).getBoundingClientRect();return r;}
+function add(tag,a){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in a)e.setAttribute(k,a[k]);W.appendChild(e);}
+function tag(x,y,t,cls){const d=document.createElement('div');d.className=cls;d.style.left=x+'px';d.style.top=y+'px';d.innerHTML=t;document.body.appendChild(d);}
+const C={g:'#9a98a3',b:'#5b4cf0',p:'#f0508c'};
+function line(pts,kind,o={}){
+  const d='M'+pts.map(p=>p.join(' ')).join(' L');
+  add('path',{d,fill:'none',stroke:C[kind],'stroke-width':kind=='b'?2.4:1.7,'stroke-dasharray':kind=='p'?'7 5':'','stroke-linejoin':'round','marker-end':`url(#a-${kind})`,...(o.both?{'marker-start':`url(#a-${kind})`}:{})});
+  if(o.text)tag(o.lx,o.ly,o.text,'lbl'+(o.below?' lo':''));
+  if(o.num)tag(o.nx,o.ny,o.num,'num');
+}
+const R=id=>box(id);
+const b=R('browser'),w=R('web'),i=R('idp'),a=R('api'),s=R('sql'),g=R('gcs'),k=R('worker'),oa=R('openai'),v=R('vertex'),st=R('stripe'),vw=R('viewer'),pl=R('platform');
+// clients -> gcp
+let y=w.top+60; line([[b.right,y],[w.left,y]],'g',{text:'pages',lx:(b.right+w.left)/2,ly:y});
+y=(w.bottom+i.top)/2; line([[b.right,y],[a.left,y]],'b',{text:'REST · ID token',lx:(w.left+w.right)/2,ly:y,num:'1',nx:b.right+45,ny:y});
+y=i.top+45; line([[b.right,y],[i.left,y]],'g',{text:'sign in',lx:(b.right+i.left)/2,ly:y});
+y=i.top+75; line([[a.left,y],[i.right,y]],'g',{text:'verify',lx:(i.right+a.left)/2,ly:y,below:true});
+y=(i.bottom+pl.top)/2+30; line([[vw.right,y],[a.left,y]],'g',{text:'public share page',lx:(w.left+w.right)/2,ly:y});
+// api -> data
+y=s.top+70; line([[a.right,y],[s.left,y]],'b',{text:'enqueue',lx:(a.right+s.left)/2,ly:y,num:'3',nx:(a.right+s.left)/2,ny:y+20});
+y=s.top+200; line([[a.right,y],[s.left,y]],'g',{text:'read · write',lx:(a.right+s.left)/2,ly:y,both:true});
+y=g.top+60; line([[a.right,y],[g.left,y]],'g',{text:'uploads<br>signed URLs',lx:(a.right+g.left)/2,ly:y,both:true});
+// worker <-> data
+y=s.top+70; line([[k.left,y],[s.right,y]],'b',{text:'claim',lx:(s.right+k.left)/2,ly:y,num:'4',nx:(s.right+k.left)/2,ny:y+20});
+y=s.top+200; line([[k.left,y],[s.right,y]],'g',{text:'heartbeat<br>settle',lx:(s.right+k.left)/2,ly:y});
+y=g.top+60; line([[k.left,y],[g.right,y]],'b',{text:'save outputs',lx:(g.right+k.left)/2,ly:y,num:'6',nx:(g.right+k.left)/2,ny:y+20});
+// worker -> providers
+y=oa.top+70; line([[k.right,y],[oa.left,y]],'b',{text:'images',lx:(k.right+oa.left)/2,ly:y,num:'5',nx:(k.right+oa.left)/2,ny:y+20});
+y=v.top+70; line([[k.right,y],[v.left,y]],'b',{text:'images · video',lx:(k.right+oa.left)/2,ly:y});
+// bottom lanes
+const L1=950,L2=972;
+line([[a.left+a.width*.35,a.bottom],[a.left+a.width*.35,L1],[v.right+0-0,L1].map((q,j)=>j?q:v.left+v.width*.5),[v.left+v.width*.5,v.bottom]],'g',{text:'prompt enhance · copilot plan (Gemini text)',lx:1240,ly:L1});
+line([[st.left+st.width*.25,st.bottom],[st.left+st.width*.25,L2],[a.left+a.width*.65,L2],[a.left+a.width*.65,a.bottom]],'p',{text:'webhook → credits added',lx:1240,ly:L2,below:true});
+</script>
+</body></html>

@@ -139,32 +139,44 @@ Models, parameters and prices live in one YAML file; the UI builds its controls 
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    B([Browser]) --> W[studio-web<br/>Next.js]
-    B --> A[studio-api<br/>FastAPI]
-    A --> DB[(Postgres<br/>Cloud SQL)]
-    K[studio-worker] -- claims queued jobs<br/>SKIP LOCKED --> DB
-    K --> P{{OpenAI / Vertex AI}}
-    K --> S[(Cloud Storage)]
-    A --> S
-    A -. webhooks .- ST{{Stripe}}
-```
+<p align="center">
+  <img src="docs/media/architecture.png" alt="System architecture: browser, studio-web, studio-api, Cloud SQL job queue, Cloud Storage, studio-worker, OpenAI, Vertex AI, Stripe" width="100%" />
+</p>
+<p align="center"><sub>Numbered steps follow one generation from submit to settle. Source: <a href="docs/media/architecture.html">docs/media/architecture.html</a> (open in a browser to edit, then re-screenshot).</sub></p>
 
-- **Auth**: Google Identity Platform (Firebase Auth). The browser signs in and sends an
-  ID token; the API verifies it and creates the user plus a personal workspace on first visit.
-- **Workspaces and roles**: every resource belongs to a workspace. Roles are ordered
-  `viewer < member < admin < owner`; see `backend/app/core/permissions.py`.
-  - viewer: browse gallery, jobs, members
-  - member: also upload and generate
-  - admin: also invite, remove, change roles (cannot touch the owner)
-  - owner: also rename/delete the workspace and manage billing
-- **Jobs**: a generation request is a row in `jobs`. Workers claim rows with
-  `SKIP LOCKED`, so you can run many workers without a separate queue service. A running
-  job sends heartbeats; if a worker dies, the job is retried up to `JOB_MAX_ATTEMPTS`.
-  Outputs are saved to storage and the gallery automatically.
-- **Uploads**: file type is detected from content, not the filename. Images and videos
-  up to `MAX_UPLOAD_BYTES` (500 MB default).
+### Services
+
+| Service | Runs on | What it does |
+| --- | --- | --- |
+| **studio-web** | Cloud Run, public | Next.js app: landing page, sign-in, studio. Talks to the API directly from the browser and polls jobs for live progress. |
+| **studio-api** | Cloud Run, public | FastAPI. Verifies ID tokens, enforces roles, prices and validates requests from the catalog, holds credits, enqueues jobs, serves assets via signed URLs, runs Copilot planning, storyboards, billing and Stripe webhooks. |
+| **studio-worker** | Cloud Run, always-on, internal | Claims queued jobs, calls the provider adapter, saves outputs to storage and the gallery, settles credits, assembles storyboard films with ffmpeg. Scale it out by adding instances. |
+| **Cloud SQL** | Postgres 16 | Source of truth and the job queue. Schema managed by Alembic. |
+| **Cloud Storage** | Private bucket | Uploads and generated media, only reachable through short-lived signed URLs. |
+
+### Key design decisions
+
+| Decision | Why |
+| --- | --- |
+| **Postgres as the queue** (`SELECT … FOR UPDATE SKIP LOCKED`) | One less service to run. Many workers can claim jobs safely; a job is a normal row you can query. |
+| **Heartbeats + retries** | A running job heartbeats. If a worker dies, the job is retried up to `JOB_MAX_ATTEMPTS`. |
+| **Hold, then settle** | The estimated price is held when a job is submitted and settled to actual usage when it finishes, so two jobs can't overspend the same balance. |
+| **Config-driven catalog** | `backend/app/catalog/models.yaml` defines models, parameters, validation and prices. The UI builds its controls from it. |
+| **Generation runs in the worker** | Slow or failing image and video calls never block API requests. (The API only makes short Gemini text calls for prompt enhancement and Copilot planning.) Keys live in Secret Manager. |
+| **Content-sniffed uploads** | File type is detected from the bytes, not the filename. Images and videos up to `MAX_UPLOAD_BYTES` (500 MB default). |
+
+### Auth and roles
+
+Sign-in uses **Google Identity Platform** (Firebase Auth). The browser sends an ID token; the
+API verifies it and creates the user plus a personal workspace on first visit. Every resource
+belongs to a workspace (`backend/app/core/permissions.py`):
+
+| Role | Can do |
+| --- | --- |
+| **Viewer** | Browse the gallery, jobs and members |
+| **Member** | Everything a viewer can, plus upload and generate |
+| **Admin** | Everything a member can, plus invite, remove and change roles (not the owner) |
+| **Owner** | Everything, plus rename or delete the workspace and manage billing |
 
 ## Repository layout
 
