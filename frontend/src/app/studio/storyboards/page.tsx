@@ -7,7 +7,7 @@ import { useApi } from "@/lib/api";
 import { type Storyboard, type StoryboardSummary, shotsFromText } from "@/lib/storyboard";
 import { useWorkspace } from "@/lib/workspace";
 
-const field = "w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none transition focus:border-violet-400";
+const field = "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition focus:border-brand";
 
 const EXAMPLE = `Dawn over a rocky coast, a lone lighthouse on the cliff
 The keeper climbs the spiral stairs, lantern in hand
@@ -41,33 +41,33 @@ function NewStoryboard({ onCancel }: { onCancel: () => void }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+    <div className="rounded-2xl border border-line bg-surface p-5">
       <h2 className="text-lg font-medium">New storyboard</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs text-zinc-400">Title</span>
+          <span className="mb-1 block text-xs text-muted">Title</span>
           <input id="sb-title" className={field} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The last lighthouse" autoFocus />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-zinc-400">Look and feel (added to every frame)</span>
+          <span className="mb-1 block text-xs text-muted">Look and feel (added to every frame)</span>
           <input id="sb-style" className={field} value={style} onChange={(e) => setStyle(e.target.value)} placeholder="cinematic, 35mm film, soft dawn light" />
         </label>
       </div>
       <label className="mt-4 block">
-        <span className="mb-1 flex justify-between text-xs text-zinc-400">
+        <span className="mb-1 flex justify-between text-xs text-muted">
           <span>Shots, one per line (optional, you can add them later)</span>
-          <button type="button" className="text-violet-300 hover:text-violet-200" onClick={() => setShots(EXAMPLE)}>
+          <button type="button" className="text-brand hover:text-brand-ink" onClick={() => setShots(EXAMPLE)}>
             Use an example
           </button>
         </span>
         <textarea id="sb-shots" className={`${field} min-h-32`} value={shots} onChange={(e) => setShots(e.target.value)} placeholder={EXAMPLE} />
       </label>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
       <div className="mt-4 flex gap-2">
-        <button id="sb-create" onClick={create} disabled={busy} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50">
+        <button id="sb-create" onClick={create} disabled={busy} className="btn btn-primary disabled:opacity-50">
           {busy ? "Creating…" : `Create${shotsFromText(shots).length ? ` with ${shotsFromText(shots).length} shots` : ""}`}
         </button>
-        <button onClick={onCancel} className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-white">
+        <button onClick={onCancel} className="rounded-lg px-4 py-2 text-sm text-muted hover:text-ink">
           Cancel
         </button>
       </div>
@@ -102,22 +102,22 @@ export default function StoryboardsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Storyboards</h1>
-          <p className="mt-1 text-sm text-zinc-400">Plan a sequence shot by shot, make a keyframe for each, animate them, and join the clips into one film.</p>
+          <p className="mt-1 text-sm text-muted">Plan a sequence shot by shot, make a keyframe for each, animate them, and join the clips into one film.</p>
         </div>
         {canEdit && !creating && (
-          <button id="sb-new" onClick={() => setCreating(true)} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200">
+          <button id="sb-new" onClick={() => setCreating(true)} className="btn btn-primary">
             New storyboard
           </button>
         )}
       </div>
 
       {creating && <NewStoryboard onCancel={() => setCreating(false)} />}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {items && items.length === 0 && !creating && (
-        <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center text-zinc-400">
+        <div className="rounded-2xl border border-dashed border-line-strong p-10 text-center text-muted">
           <p>No storyboards yet.</p>
           {canEdit && (
-            <button onClick={() => setCreating(true)} className="mt-3 text-violet-300 hover:text-violet-200">
+            <button onClick={() => setCreating(true)} className="mt-3 text-brand hover:text-brand-ink">
               Start your first one
             </button>
           )}
@@ -129,18 +129,18 @@ export default function StoryboardsPage() {
           <Link
             key={sb.id}
             href={`/studio/storyboards/${sb.id}`}
-            className="group overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:shadow-lg hover:shadow-violet-500/10"
+            className="group overflow-hidden rounded-2xl border border-line bg-surface transition duration-300 hover:-translate-y-0.5 hover:border-subtle hover:shadow-float"
           >
-            <div className="relative aspect-video bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-sky-500/20">
+            <div className="relative aspect-video bg-gradient-to-br from-brand-soft via-[#fde7f0] to-[#fff1e0]">
               {sb.cover?.url && (
                 // eslint-disable-next-line @next/next/no-img-element -- signed URLs from storage
                 <img src={sb.cover.url} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
               )}
-              {sb.has_film && <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white">Film ready</span>}
+              {sb.has_film && <span className="absolute right-2 top-2 rounded-full bg-ink/30 backdrop-blur-sm animate-fade-in px-2 py-0.5 text-xs text-ink">Film ready</span>}
             </div>
             <div className="p-4">
               <p className="font-medium">{sb.title}</p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-subtle">
                 {sb.shot_count} shots · {sb.keyframes_done} keyframes · {sb.clips_done} clips
               </p>
             </div>
